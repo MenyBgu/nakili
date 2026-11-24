@@ -1,0 +1,102 @@
+import { addDays, format, startOfWeek } from "date-fns";
+import type { NakiliStore } from "@/lib/types";
+
+const today = new Date();
+const week = startOfWeek(today, { weekStartsOn: 0 });
+const date = (offset: number) => format(addDays(week, offset), "yyyy-MM-dd");
+
+export const demoStore: NakiliStore = {
+  household: {
+    id: "demo-household",
+    name: "הבית שלנו",
+    timezone: "Asia/Jerusalem",
+    weekStart: 0,
+    ownerId: "demo-user",
+    accessCode: "NKI-7F4K-2P9M",
+  },
+  members: [
+    {
+      id: "demo-member",
+      userId: "demo-user",
+      householdId: "demo-household",
+      nickname: "אני",
+      role: "owner",
+    },
+  ],
+  chores: [
+    {
+      id: "demo-kitchen",
+      householdId: "demo-household",
+      title: "ניקוי המטבח",
+      description: "משטחי עבודה, כיור וכיריים",
+      icon: "🧽",
+      color: "#dcefe1",
+      assignedMemberId: null,
+      active: true,
+      sortOrder: 1,
+      frequency: "weekly",
+      weekdays: [0, 3],
+      oneOffDate: null,
+      startDate: null,
+      endDate: null,
+    },
+    {
+      id: "demo-laundry",
+      householdId: "demo-household",
+      title: "מכונת כביסה",
+      description: "להפעיל מכונה ולקפל",
+      icon: "🧺",
+      color: "#e5ebfa",
+      assignedMemberId: null,
+      active: true,
+      sortOrder: 2,
+      frequency: "weekly",
+      weekdays: [1, 4],
+      oneOffDate: null,
+      startDate: null,
+      endDate: null,
+    },
+    {
+      id: "demo-bathroom",
+      householdId: "demo-household",
+      title: "ניקוי חדר רחצה",
+      description: "כיור, אסלה ומראה",
+      icon: "✨",
+      color: "#fff0cf",
+      assignedMemberId: null,
+      active: true,
+      sortOrder: 3,
+      frequency: "weekly",
+      weekdays: [5],
+      oneOffDate: null,
+      startDate: null,
+      endDate: null,
+    },
+    {
+      id: "demo-trash",
+      householdId: "demo-household",
+      title: "להוציא פחים",
+      description: "",
+      icon: "🗑️",
+      color: "#f6e4e1",
+      assignedMemberId: null,
+      active: true,
+      sortOrder: 4,
+      frequency: "weekly",
+      weekdays: [2, 5],
+      oneOffDate: null,
+      startDate: null,
+      endDate: null,
+    },
+  ],
+  completions: [
+    {
+      id: "demo-completion",
+      choreId: "demo-kitchen",
+      occurrenceDate: date(0),
+      status: "completed",
+      completedBy: "demo-member",
+      completedAt: new Date().toISOString(),
+    },
+  ],
+};
