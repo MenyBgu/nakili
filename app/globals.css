@@ -94,11 +94,17 @@ textarea:focus-visible {
   display: grid;
   width: 46px;
   height: 46px;
+  padding: 0;
   place-items: center;
   border-radius: 16px;
   color: white;
-  background: var(--primary);
+  background: transparent;
   box-shadow: 0 10px 20px rgb(47 119 97 / 18%);
+  overflow: hidden;
+}
+
+.brand-mark svg {
+  display: block;
 }
 
 .brand strong {

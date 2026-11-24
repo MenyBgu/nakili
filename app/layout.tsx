@@ -2,9 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "נקי-לי | ניהול ניקיון לבית",
+  title: "נקי-לי | ניהול משימות לבית",
   description: "מתכננים את מטלות הבית בשבוע אחד, פשוט וברור.",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/apple-icon.svg",
+  },
 };
 
 export const viewport: Viewport = {

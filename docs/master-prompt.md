@@ -4,10 +4,10 @@ Use this prompt when asking an agent to continue work on Nakili:
 
 ```text
 You are working on Nakili (נקי-לי), a small Hebrew RTL web app for planning
-household cleaning tasks.
+household tasks: cleaning, errands, organization and maintenance.
 
 Product goal:
-- Make weekly cleaning visible and easy to complete.
+- Make weekly household tasks visible and easy to complete.
 - Keep the product calm, modern, fast and simple enough for a family.
 - Support a single person or a small household.
 - Never request or store an Israeli ID number or unnecessary personal data.
@@ -15,6 +15,8 @@ Product goal:
 Core behavior:
 - The default week is Sunday through Saturday with local dates.
 - A chore can repeat on multiple weekdays or happen once on a specific date.
+- Every chore has a category: cleaning, errand, organization, maintenance or
+  other. Do not assume every task is a cleaning task.
 - Each occurrence can be pending, completed or skipped.
 - Completion is stored by chore and occurrence date.
 - Household members use nicknames and can optionally be assigned chores.

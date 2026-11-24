@@ -1,4 +1,5 @@
 export type ChoreFrequency = "weekly" | "one_off";
+export type ChoreCategory = "cleaning" | "errand" | "organization" | "maintenance" | "other";
 export type CompletionStatus = "completed" | "skipped";
 export type MemberRole = "owner" | "member";
 
@@ -24,6 +25,7 @@ export type Chore = {
   householdId: string;
   title: string;
   description: string;
+  category: ChoreCategory;
   icon: string;
   color: string;
   assignedMemberId: string | null;

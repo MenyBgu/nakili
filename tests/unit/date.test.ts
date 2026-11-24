@@ -20,6 +20,7 @@ const weekly: Chore = {
   householdId: "house",
   title: "כביסה",
   description: "",
+  category: "cleaning",
   icon: "🧺",
   color: "#dcefe1",
   assignedMemberId: null,

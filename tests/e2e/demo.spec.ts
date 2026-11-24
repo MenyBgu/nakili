@@ -6,6 +6,8 @@ test("local demo opens the weekly planner", async ({ page }) => {
   await expect(page.getByRole("heading", { name: /שלום/ })).toBeVisible();
   await expect(page.getByText("השבוע שלי")).toBeVisible();
   await expect(page.getByText("מכונת כביסה").first()).toBeVisible();
+  await expect(page.getByText("קניות לבית").first()).toBeVisible();
+  await expect(page.getByText("סידור המזווה").first()).toBeVisible();
 });
 
 test("a visitor can create a local household", async ({ page }) => {

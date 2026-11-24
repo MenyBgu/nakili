@@ -13,7 +13,6 @@ import {
   Plus,
   RotateCcw,
   Settings,
-  Sparkles,
   Trash2,
   Users,
   X,
@@ -22,6 +21,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { demoStore } from "@/lib/demo-data";
+import { NakiliLogo } from "@/components/nakili-logo";
 import {
   choresForDate,
   completionFor,
@@ -32,6 +32,7 @@ import {
 } from "@/lib/date";
 import type {
   Chore,
+  ChoreCategory,
   HouseholdMember,
   NakiliStore,
 } from "@/lib/types";
@@ -42,6 +43,7 @@ type AccessMode = "landing" | "create" | "join";
 type ChoreDraft = {
   title: string;
   description: string;
+  category: ChoreCategory;
   icon: string;
   color: string;
   frequency: "weekly" | "one_off";
@@ -54,11 +56,32 @@ type ChoreDraft = {
 
 const STORAGE_KEY = "nakili:store:v1";
 const weekLabels = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"];
+const categoryOptions: Array<{ value: ChoreCategory; label: string }> = [
+  { value: "cleaning", label: "ניקיון" },
+  { value: "errand", label: "סידור מחוץ לבית" },
+  { value: "organization", label: "סדר וארגון" },
+  { value: "maintenance", label: "תחזוקה" },
+  { value: "other", label: "אחר" },
+];
 const colorOptions = ["#dcefe1", "#e5ebfa", "#fff0cf", "#f6e4e1", "#eee2f8", "#dff1f3"];
 const iconOptions = ["🧽", "🧺", "✨", "🗑️", "🧹", "🪟", "🛒", "🌿", "🧼"];
 
+function categoryLabel(category: ChoreCategory) {
+  return categoryOptions.find((option) => option.value === category)?.label ?? "אחר";
+}
+
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function normalizeStore(value: NakiliStore): NakiliStore {
+  return {
+    ...value,
+    chores: value.chores.map((chore) => ({
+      ...chore,
+      category: chore.category ?? "cleaning",
+    })),
+  };
 }
 
 function newId() {
@@ -76,6 +99,7 @@ function blankDraft(): ChoreDraft {
   return {
     title: "",
     description: "",
+    category: "cleaning",
     icon: "🧽",
     color: colorOptions[0],
     frequency: "weekly",
@@ -91,6 +115,7 @@ function choreToDraft(chore: Chore): ChoreDraft {
   return {
     title: chore.title,
     description: chore.description,
+    category: chore.category,
     icon: chore.icon,
     color: chore.color,
     frequency: chore.frequency,
@@ -159,6 +184,7 @@ function storeFromRemoteRows(
     household_id: string;
     title: string;
     description: string;
+    category: ChoreCategory;
     icon: string;
     color: string;
     assigned_member_id: string | null;
@@ -203,6 +229,7 @@ function storeFromRemoteRows(
         householdId: chore.household_id,
         title: chore.title,
         description: chore.description,
+        category: chore.category,
         icon: chore.icon,
         color: chore.color,
         assignedMemberId: chore.assigned_member_id,
@@ -255,7 +282,7 @@ async function fetchRemoteStore(
     .order("joined_at");
   const chores = await client
     .from("chores")
-    .select("id,household_id,title,description,icon,color,assigned_member_id,active,sort_order,chore_schedules(frequency,weekdays,one_off_date,start_date,end_date)")
+    .select("id,household_id,title,description,category,icon,color,assigned_member_id,active,sort_order,chore_schedules(frequency,weekdays,one_off_date,start_date,end_date)")
     .eq("household_id", household.data.id)
     .eq("active", true)
     .order("sort_order");
@@ -297,9 +324,7 @@ function Landing({
     <main className="shell">
       <header className="topbar">
         <div className="brand">
-          <span className="brand-mark" aria-hidden="true">
-            <Sparkles size={23} />
-          </span>
+          <span className="brand-mark"><NakiliLogo title="" /></span>
           <span>
             <strong>נקי-לי</strong>
             <small>הבית מסודר, בלי לזכור הכול</small>
@@ -308,11 +333,11 @@ function Landing({
       </header>
       <section className="hero" aria-labelledby="landing-title">
         <div>
-          <p className="eyebrow">ניהול ניקיון פשוט לבית</p>
+          <p className="eyebrow">ניהול משימות פשוט לבית</p>
           <h1 id="landing-title">יותר סדר. פחות לזכור.</h1>
           <p className="hero-copy">
-            בוחרים מה מנקים ובאילו ימים, רואים את כל השבוע במקום אחד, ומסמנים
-            ביצוע ברגע שסיימתם.
+            בוחרים מה צריך לעשות ובאילו ימים, רואים את כל השבוע במקום אחד,
+            ומסמנים ביצוע ברגע שסיימתם.
           </p>
           <div className="landing-actions">
             <button className="primary-button" onClick={() => onSelect("create")}>
@@ -364,9 +389,7 @@ function AccessForm({
         <ArrowRight size={16} /> חזרה
       </button>
       <section className="form-card">
-        <span className="brand-mark" aria-hidden="true">
-          {mode === "create" ? <Sparkles size={23} /> : <KeyRound size={23} />}
-        </span>
+        <span className="brand-mark"><NakiliLogo title="" /></span>
         <h1>{mode === "create" ? "יוצרים בית חדש" : "מצטרפים לבית"}</h1>
         <p>
           {mode === "create"
@@ -475,7 +498,7 @@ function ChoreModal({
         </div>
         <div className="form-grid">
           <label className="full-width">
-            מה מנקים?
+            מה צריך לעשות?
             <input
               autoFocus
               value={draft.title}
@@ -483,6 +506,17 @@ function ChoreModal({
               placeholder="למשל: להפעיל מכונת כביסה"
               maxLength={100}
             />
+          </label>
+          <label className="full-width">
+            סוג מטלה
+            <select
+              value={draft.category}
+              onChange={(event) => update("category", event.target.value as ChoreCategory)}
+            >
+              {categoryOptions.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
           </label>
           <label>
             אייקון
@@ -672,7 +706,9 @@ function WeekView({
                         <button className="chore-content" onClick={() => onEdit(chore)}>
                           <strong>{chore.title}</strong>
                           <small>
-                            {assignedMember ? `אחראי/ת: ${assignedMember.nickname}` : chore.description || "ללא הערה"}
+                            {categoryLabel(chore.category)}
+                            {assignedMember ? ` · אחראי/ת: ${assignedMember.nickname}` : ""}
+                            {chore.description ? ` · ${chore.description}` : ""}
                           </small>
                         </button>
                         <button
@@ -787,7 +823,7 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
         const saved = localStorage.getItem(STORAGE_KEY);
         if (!cancelled && saved) {
           try {
-            setStore(JSON.parse(saved) as NakiliStore);
+            setStore(normalizeStore(JSON.parse(saved) as NakiliStore));
           } catch {
             localStorage.removeItem(STORAGE_KEY);
           }
@@ -843,6 +879,7 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
               ...blankDraft(),
               title: chore.title,
               description: chore.description,
+              category: chore.category,
               icon: chore.icon,
               color: chore.color,
               weekdays: chore.weekdays,
@@ -877,6 +914,7 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
       ? await supabase.from("chores").update({
           title: draft.title.trim(),
           description: draft.description.trim(),
+          category: draft.category,
           icon: draft.icon,
           color: draft.color,
           assigned_member_id: draft.assignedMemberId || null,
@@ -886,6 +924,7 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
           household_id: current.household.id,
           title: draft.title.trim(),
           description: draft.description.trim(),
+          category: draft.category,
           icon: draft.icon,
           color: draft.color,
           assigned_member_id: draft.assignedMemberId || null,
@@ -922,6 +961,7 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
           householdId: store.household.id,
           title: draft.title.trim(),
           description: draft.description.trim(),
+          category: draft.category,
           icon: draft.icon,
           color: draft.color,
           assignedMemberId: draft.assignedMemberId || null,
@@ -1098,7 +1138,7 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
     <main className="shell">
       <header className="topbar">
         <div className="brand">
-          <span className="brand-mark" aria-hidden="true"><Sparkles size={22} /></span>
+          <span className="brand-mark"><NakiliLogo title="" /></span>
           <span>
             <strong>נקי-לי</strong>
             <small>{store.household.name}</small>
