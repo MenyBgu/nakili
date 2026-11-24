@@ -37,19 +37,42 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "הבית לא נמצא" }, { status: 404 });
     }
 
-    const memberResult = await admin
+    const householdId = householdResult.data.id;
+    const existing = await admin
       .from("household_members")
-      .upsert(
-        {
-          household_id: householdResult.data.id,
-          user_id: user.id,
-          nickname: body.nickname,
-          role: user.id === householdResult.data.owner_id ? "owner" : "member",
-        },
-        { onConflict: "household_id,user_id" },
-      )
-      .select("id,user_id,household_id,nickname,role")
-      .single();
+      .select("id")
+      .eq("household_id", householdId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const profiles = existing.data
+      ? null
+      : await admin
+          .from("household_members")
+          .select("id,nickname")
+          .eq("household_id", householdId)
+          .is("user_id", null);
+    const profile = profiles?.data?.find(
+      (row) => row.nickname.trim().toLowerCase() === body.nickname.toLowerCase(),
+    );
+
+    const targetId = existing.data?.id ?? profile?.id;
+    const memberResult = targetId
+      ? await admin
+          .from("household_members")
+          .update(existing.data ? { nickname: body.nickname } : { user_id: user.id })
+          .eq("id", targetId)
+          .select("id,user_id,household_id,nickname,role")
+          .single()
+      : await admin
+          .from("household_members")
+          .insert({
+            household_id: householdId,
+            user_id: user.id,
+            nickname: body.nickname,
+            role: user.id === householdResult.data.owner_id ? "owner" : "member",
+          })
+          .select("id,user_id,household_id,nickname,role")
+          .single();
 
     if (memberResult.error || !memberResult.data) {
       return NextResponse.json({ error: "ההצטרפות לבית נכשלה" }, { status: 500 });

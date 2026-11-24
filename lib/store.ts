@@ -48,9 +48,37 @@ export function createLocalAccessCode() {
   return `NKI-${value.slice(0, 4)}-${value.slice(4, 8)}`;
 }
 
-export function blankDraft(date?: string): ChoreDraft {
-  const category = categoryOptions[0];
-  const weekday = date ? new Date(`${date}T12:00:00`).getDay() : new Date().getDay();
+const categoryKeywords: Array<[ChoreCategory, string[]]> = [
+  ["maintenance", ["תיקון", "לתקן", "נורה", "נורות", "מזגן", "פילטר", "סוללה", "ברז", "צביעה", "לצבוע"]],
+  ["errand", ["קניות", "לקנות", "קניה", "סופר", "מכולת", "דואר", "בנק", "תרופות", "לאסוף", "איסוף", "להחזיר"]],
+  ["organization", ["סידור", "לסדר", "ארגון", "לארגן", "ארון", "מזווה", "מקרר", "מגירה", "מיון", "למיין", "קיפול", "לקפל"]],
+  ["cleaning", ["ניקוי", "ניקיון", "לנקות", "שטיפה", "שטיפת", "לשטוף", "אבק", "כביסה", "כלים", "כיור", "אמבטיה", "שירותים", "רצפה", "חלונות", "מטבח", "פח", "פחים", "לטאטא", "שואב"]],
+];
+
+const iconKeywords: Array<[string, string[]]> = [
+  ["🧺", ["כביסה", "כביסות", "לקפל"]],
+  ["🍽️", ["כלים", "מדיח"]],
+  ["🗑️", ["פח", "פחים", "זבל"]],
+  ["🪟", ["חלון", "חלונות"]],
+  ["🧹", ["לטאטא", "טאטוא", "רצפה", "שואב", "אבק"]],
+  ["🌿", ["עציץ", "עציצים", "צמחים", "להשקות", "השקיית", "גינה"]],
+  ["🐾", ["כלב", "חתול", "חיות"]],
+  ["👕", ["בגדים", "ארון"]],
+  ["🛒", ["קניות", "לקנות", "סופר", "מכולת"]],
+];
+
+export function guessFromTitle(title: string) {
+  const words = title.trim().split(/\s+/);
+  const has = (keywords: string[]) =>
+    words.some((word) => keywords.some((keyword) => word.replace(/^[והבלמש]/, "") === keyword || word === keyword || word.startsWith(keyword)));
+  const category = categoryKeywords.find(([, keywords]) => has(keywords))?.[0];
+  const meta = categoryMeta(category ?? "other");
+  const icon = iconKeywords.find(([, keywords]) => has(keywords))?.[0] ?? meta.icon;
+  return { category: meta.value, icon, color: meta.color };
+}
+
+export function blankDraft(date = localDate()): ChoreDraft {
+  const category = categoryMeta("other");
   return {
     title: "",
     description: "",
@@ -58,9 +86,9 @@ export function blankDraft(date?: string): ChoreDraft {
     icon: category.icon,
     color: category.color,
     frequency: "weekly",
-    weekdays: [weekday],
-    oneOffDate: date ?? localDate(),
-    startDate: "",
+    weekdays: [new Date(`${date}T12:00:00`).getDay()],
+    oneOffDate: date,
+    startDate: date,
     endDate: "",
     assignedMemberId: "",
   };
@@ -237,6 +265,20 @@ export async function fetchRemoteStore(client: SupabaseClient): Promise<NakiliSt
     })),
     currentMemberId: membership.data.id,
   };
+}
+
+const codeKey = (householdId: string) => `nakili:code:${householdId}`;
+
+export function rememberCode(householdId: string, code: string) {
+  localStorage.setItem(codeKey(householdId), code);
+}
+
+export function recallCode(householdId: string) {
+  return localStorage.getItem(codeKey(householdId)) ?? undefined;
+}
+
+export function forgetCode(householdId: string) {
+  localStorage.removeItem(codeKey(householdId));
 }
 
 export function downloadFile(filename: string, content: string, type: string) {

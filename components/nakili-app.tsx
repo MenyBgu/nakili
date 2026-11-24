@@ -17,12 +17,15 @@ import {
   createLocalStore,
   downloadFile,
   fetchRemoteStore,
+  forgetCode,
   newId,
   normalizeStore,
+  recallCode,
+  rememberCode,
   type ChoreDraft,
 } from "@/lib/store";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { Chore, CompletionStatus, NakiliStore } from "@/lib/types";
+import type { Chore, CompletionStatus, HouseholdMember, NakiliStore } from "@/lib/types";
 
 type Screen = "week" | "settings";
 type AccessMode = "landing" | "create" | "join";
@@ -62,9 +65,8 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
   const reload = useCallback(async () => {
     if (!supabase) return null;
     const next = await fetchRemoteStore(supabase);
-    setStore((current) => next && current?.household.id === next.household.id && current.household.accessCode
-      ? { ...next, household: { ...next.household, accessCode: current.household.accessCode } }
-      : next);
+    if (next) next.household.accessCode = recallCode(next.household.id);
+    setStore(next);
     return next;
   }, [supabase]);
 
@@ -130,10 +132,12 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
         if (result.session) await supabase.auth.setSession(result.session);
         const next = await fetchRemoteStore(supabase);
         if (!next) throw new Error("הבית נוצר אבל לא נטען. נסו לרענן את הדף.");
-        if (creating && result.code) {
-          next.household.accessCode = result.code;
-          setRevealCode(result.code);
+        const knownCode = creating ? result.code : values.code.trim().toUpperCase();
+        if (knownCode) {
+          rememberCode(next.household.id, knownCode);
+          next.household.accessCode = knownCode;
         }
+        if (creating && result.code) setRevealCode(result.code);
         setStore(next);
       } else if (accessMode === "create") {
         const next = createLocalStore(values.name.trim(), nickname, values.includeExamples);
@@ -302,8 +306,11 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
     void setStatus(chore, date, current === "skipped" ? null : "skipped");
   };
 
-  const rotateCode = async () => {
-    if (!store || !window.confirm("ליצור קוד חדש? הקוד הנוכחי יפסיק לעבוד.")) return;
+  const createInvite = async () => {
+    if (
+      !store ||
+      !window.confirm("ליצור קוד הזמנה חדש? הקוד הקודם יפסיק לעבוד, אבל טלפונים שכבר מחוברים ימשיכו כרגיל.")
+    ) return;
     await run(async () => {
       if (!remote) {
         commit({ ...store, household: { ...store.household, accessCode: createLocalAccessCode() } });
@@ -315,10 +322,69 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
         });
         const result = (await response.json().catch(() => ({}))) as { code?: string; error?: string };
         if (!response.ok || !result.code) throw new Error(result.error ?? "יצירת קוד חדש נכשלה");
+        rememberCode(store.household.id, result.code);
         setStore({ ...store, household: { ...store.household, accessCode: result.code } });
       }
-      showToast("נוצר קוד חדש");
+      showToast("נוצר קוד הזמנה");
     }, "יצירת קוד חדש נכשלה");
+  };
+
+  const callMembers = async (method: "POST" | "DELETE", body: Record<string, string>) => {
+    const response = await fetch("/api/members", {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const result = (await response.json().catch(() => ({}))) as { error?: string };
+    if (!response.ok) throw new Error(result.error ?? "הפעולה נכשלה");
+  };
+
+  const addMember = async (nickname: string) => {
+    if (!store) return;
+    await run(async () => {
+      if (remote) {
+        await callMembers("POST", { householdId: store.household.id, nickname });
+        await reload();
+      } else {
+        commit({
+          ...store,
+          members: [
+            ...store.members,
+            { id: newId(), userId: null, householdId: store.household.id, nickname, role: "member" },
+          ],
+        });
+      }
+      showToast(`${nickname} נוסף/ה לבית`);
+    }, "ההוספה נכשלה");
+  };
+
+  const removeMember = async (member: HouseholdMember) => {
+    if (!store || !window.confirm(`להסיר את ${member.nickname} מהבית? משימות שלו/ה יעברו ל"כולם".`)) return;
+    await run(async () => {
+      if (remote) {
+        await callMembers("DELETE", { householdId: store.household.id, memberId: member.id });
+        await reload();
+      } else {
+        commit({
+          ...store,
+          members: store.members.filter((item) => item.id !== member.id),
+          chores: store.chores.map((chore) =>
+            chore.assignedMemberId === member.id ? { ...chore, assignedMemberId: null } : chore,
+          ),
+        });
+      }
+      showToast(`${member.nickname} הוסר/ה`);
+    }, "ההסרה נכשלה");
+  };
+
+  const renameHousehold = async (name: string) => {
+    if (!store) return;
+    commit({ ...store, household: { ...store.household, name } });
+    if (!remote) return;
+    await run(async () => {
+      const result = await remote.from("households").update({ name }).eq("id", store.household.id);
+      if (result.error) throw new Error("שינוי השם נכשל");
+    }, "שינוי השם נכשל");
   };
 
   const rename = async (nickname: string) => {
@@ -378,7 +444,10 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
         ? "לצאת מהבית במכשיר הזה? כדי לחזור תצטרכו את קוד הבית."
         : "לצאת? המשימות במצב המקומי יימחקו מהמכשיר הזה.";
     if (message && !window.confirm(message)) return;
-    if (remote) await remote.auth.signOut();
+    if (remote && store) {
+      forgetCode(store.household.id);
+      await remote.auth.signOut();
+    }
     commit(null, !supabaseConfigured && !isDemo);
     setIsDemo(false);
     setScreen("week");
@@ -502,11 +571,12 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
         <SettingsView
           store={store}
           isDemo={isDemo}
-          onCopy={() => {
-            if (store.household.accessCode) void navigator.clipboard?.writeText(store.household.accessCode);
-          }}
-          onRotate={() => void rotateCode()}
-          onRename={(nickname) => void rename(nickname)}
+          remote={Boolean(remote)}
+          onCreateInvite={() => void createInvite()}
+          onRenameHousehold={(name) => void renameHousehold(name)}
+          onRenameMe={(nickname) => void rename(nickname)}
+          onAddMember={(nickname) => void addMember(nickname)}
+          onRemoveMember={(member) => void removeMember(member)}
           onWeekStart={(value) => void changeWeekStart(value)}
           onExport={exportStore}
           onSignOut={() => void signOut()}

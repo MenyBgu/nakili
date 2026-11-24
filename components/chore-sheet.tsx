@@ -3,7 +3,15 @@
 import { Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { WEEKDAYS } from "@/lib/date";
-import { blankDraft, categoryMeta, categoryOptions, choreToDraft, iconOptions, type ChoreDraft } from "@/lib/store";
+import {
+  blankDraft,
+  categoryMeta,
+  categoryOptions,
+  choreToDraft,
+  guessFromTitle,
+  iconOptions,
+  type ChoreDraft,
+} from "@/lib/store";
 import type { Chore, HouseholdMember } from "@/lib/types";
 
 export function ChoreSheet({
@@ -24,6 +32,7 @@ export function ChoreSheet({
   onDelete?: () => void;
 }) {
   const [draft, setDraft] = useState<ChoreDraft>(() => (chore ? choreToDraft(chore) : blankDraft(date)));
+  const [styleTouched, setStyleTouched] = useState(Boolean(chore));
   const [error, setError] = useState("");
   const update = <K extends keyof ChoreDraft>(key: K, value: ChoreDraft[K]) =>
     setDraft((current) => ({ ...current, [key]: value }));
@@ -36,15 +45,13 @@ export function ChoreSheet({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const changeTitle = (title: string) =>
+    setDraft((current) => ({ ...current, title, ...(styleTouched ? {} : guessFromTitle(title)) }));
+
   const pickCategory = (value: ChoreDraft["category"]) => {
-    const previous = categoryMeta(draft.category);
-    const next = categoryMeta(value);
-    setDraft((current) => ({
-      ...current,
-      category: value,
-      icon: current.icon === previous.icon ? next.icon : current.icon,
-      color: next.color,
-    }));
+    const meta = categoryMeta(value);
+    setStyleTouched(true);
+    setDraft((current) => ({ ...current, category: value, icon: meta.icon, color: meta.color }));
   };
 
   const toggleDay = (day: number) =>
@@ -91,38 +98,21 @@ export function ChoreSheet({
           </button>
         </header>
 
-        <label>
-          מה צריך לעשות?
+        <div className="title-field">
+          <span className="title-icon" aria-hidden="true" style={{ background: draft.color }}>{draft.icon}</span>
           <input
             autoFocus={!chore}
+            aria-label="מה צריך לעשות?"
             className="title-input"
             value={draft.title}
-            onChange={(event) => update("title", event.target.value)}
-            placeholder="למשל: להפעיל מכונת כביסה"
+            onChange={(event) => changeTitle(event.target.value)}
+            placeholder="מה צריך לעשות?"
             maxLength={100}
           />
-        </label>
+        </div>
 
-        <fieldset>
-          <legend>סוג</legend>
-          <div className="chips">
-            {categoryOptions.map((option) => (
-              <button
-                type="button"
-                key={option.value}
-                className={`chip ${draft.category === option.value ? "selected" : ""}`}
-                onClick={() => pickCategory(option.value)}
-                aria-pressed={draft.category === option.value}
-              >
-                <span aria-hidden="true">{option.icon}</span> {option.label}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend>מתי?</legend>
-          <div className="segmented" role="group">
+        <div className="when">
+          <div className="segmented" role="group" aria-label="תדירות">
             <button
               type="button"
               className={draft.frequency === "weekly" ? "selected" : ""}
@@ -141,7 +131,7 @@ export function ChoreSheet({
             </button>
           </div>
           {draft.frequency === "weekly" ? (
-            <div className="weekday-picker">
+            <div className="weekday-picker" role="group" aria-label="ימים">
               {WEEKDAYS.map((day) => (
                 <button
                   type="button"
@@ -163,37 +153,64 @@ export function ChoreSheet({
               onChange={(event) => update("oneOffDate", event.target.value)}
             />
           )}
-        </fieldset>
+        </div>
 
-        {members.length > 1 && (
-          <fieldset>
-            <legend>מי אחראי?</legend>
-            <div className="chips">
-              <button
-                type="button"
-                className={`chip ${!draft.assignedMemberId ? "selected" : ""}`}
-                onClick={() => update("assignedMemberId", "")}
-                aria-pressed={!draft.assignedMemberId}
-              >
-                כולם
-              </button>
-              {members.map((member) => (
+        <details className="more">
+          <summary>עוד אפשרויות</summary>
+          {draft.frequency === "weekly" && (
+            <div className="two-cols">
+              <label>
+                תאריך התחלה
+                <input type="date" value={draft.startDate} onChange={(event) => update("startDate", event.target.value)} />
+              </label>
+              <label>
+                תאריך סיום
+                <input type="date" value={draft.endDate} onChange={(event) => update("endDate", event.target.value)} />
+              </label>
+            </div>
+          )}
+          {members.length > 1 && (
+            <fieldset>
+              <legend>מי אחראי?</legend>
+              <div className="chips">
                 <button
                   type="button"
-                  key={member.id}
-                  className={`chip ${draft.assignedMemberId === member.id ? "selected" : ""}`}
-                  onClick={() => update("assignedMemberId", member.id)}
-                  aria-pressed={draft.assignedMemberId === member.id}
+                  className={`chip ${!draft.assignedMemberId ? "selected" : ""}`}
+                  onClick={() => update("assignedMemberId", "")}
+                  aria-pressed={!draft.assignedMemberId}
                 >
-                  {member.nickname}
+                  כולם
+                </button>
+                {members.map((member) => (
+                  <button
+                    type="button"
+                    key={member.id}
+                    className={`chip ${draft.assignedMemberId === member.id ? "selected" : ""}`}
+                    onClick={() => update("assignedMemberId", member.id)}
+                    aria-pressed={draft.assignedMemberId === member.id}
+                  >
+                    {member.nickname}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )}
+          <fieldset>
+            <legend>סוג</legend>
+            <div className="chips">
+              {categoryOptions.map((option) => (
+                <button
+                  type="button"
+                  key={option.value}
+                  className={`chip ${draft.category === option.value ? "selected" : ""}`}
+                  onClick={() => pickCategory(option.value)}
+                  aria-pressed={draft.category === option.value}
+                >
+                  <span aria-hidden="true">{option.icon}</span> {option.label}
                 </button>
               ))}
             </div>
           </fieldset>
-        )}
-
-        <details className="more">
-          <summary>עוד אפשרויות</summary>
           <fieldset>
             <legend>אייקון</legend>
             <div className="icon-picker">
@@ -202,7 +219,10 @@ export function ChoreSheet({
                   type="button"
                   key={icon}
                   className={draft.icon === icon ? "selected" : ""}
-                  onClick={() => update("icon", icon)}
+                  onClick={() => {
+                    setStyleTouched(true);
+                    update("icon", icon);
+                  }}
                   aria-pressed={draft.icon === icon}
                 >
                   {icon}
@@ -220,18 +240,6 @@ export function ChoreSheet({
               maxLength={240}
             />
           </label>
-          {draft.frequency === "weekly" && (
-            <div className="two-cols">
-              <label>
-                החל מ־
-                <input type="date" value={draft.startDate} onChange={(event) => update("startDate", event.target.value)} />
-              </label>
-              <label>
-                עד
-                <input type="date" value={draft.endDate} onChange={(event) => update("endDate", event.target.value)} />
-              </label>
-            </div>
-          )}
         </details>
 
         {error && <div className="notice error" role="alert">{error}</div>}

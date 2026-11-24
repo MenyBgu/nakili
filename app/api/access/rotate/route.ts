@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import {
-  createAccessCode,
-  errorResponse,
-  getUserOrCreateAnonymousSession,
-  hashAccessCode,
-} from "@/app/api/access/_helpers";
+import { createAccessCode, errorResponse, hashAccessCode } from "@/app/api/access/_helpers";
+import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 
 const bodySchema = z.object({
   householdId: z.string().uuid(),
@@ -14,22 +10,22 @@ const bodySchema = z.object({
 export async function POST(request: Request) {
   try {
     const body = bodySchema.parse(await request.json());
-    const { admin, user, error } = await getUserOrCreateAnonymousSession();
-
-    if (error || !user) {
-      return NextResponse.json({ error: "לא ניתן להתחבר כרגע. נסו שוב בעוד רגע." }, { status: 503 });
+    const supabase = await createSupabaseServerClient();
+    const admin = createSupabaseAdminClient();
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) {
+      return NextResponse.json({ error: "צריך להיות מחוברים לבית" }, { status: 401 });
     }
 
     const membership = await admin
       .from("household_members")
-      .select("household_id")
-      .eq("user_id", user.id)
+      .select("id")
+      .eq("user_id", data.user.id)
       .eq("household_id", body.householdId)
-      .eq("role", "owner")
       .maybeSingle();
 
     if (membership.error || !membership.data) {
-      return NextResponse.json({ error: "רק מי שיצר את הבית יכול להחליף את הקוד" }, { status: 403 });
+      return NextResponse.json({ error: "אין הרשאה לבית הזה" }, { status: 403 });
     }
 
     await admin
@@ -45,7 +41,7 @@ export async function POST(request: Request) {
     });
 
     if (created.error) {
-      return NextResponse.json({ error: "החלפת הקוד נכשלה" }, { status: 500 });
+      return NextResponse.json({ error: "יצירת הקוד נכשלה" }, { status: 500 });
     }
 
     return NextResponse.json({ code });

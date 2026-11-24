@@ -939,9 +939,35 @@ textarea {
   font-size: 21px;
 }
 
+.title-field {
+  position: relative;
+}
+
+.title-icon {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 12px;
+  font-size: 21px;
+  transform: translateY(-50%);
+  transition: background 160ms ease;
+  pointer-events: none;
+}
+
 .title-input {
+  min-height: 58px;
+  padding-right: 60px;
   font-size: 18px;
   font-weight: 600;
+}
+
+.when {
+  display: grid;
+  gap: 10px;
 }
 
 .chips {
@@ -1109,9 +1135,45 @@ fieldset > input[type="date"] {
   font-size: 17px;
 }
 
-.settings-card .text-button {
+.settings-card .text-button,
+.settings-card > .secondary-button,
+.settings-card > .primary-button {
   justify-self: start;
+}
+
+.settings-card .text-button {
   margin-inline-start: -10px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+}
+
+.setting-row.column {
+  display: grid;
+  gap: 8px;
+}
+
+.setting-text {
+  display: grid;
+  min-width: 0;
+}
+
+.setting-text small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.setting-text strong {
+  font-size: 16px;
+}
+
+.segmented button:disabled {
+  opacity: 1;
 }
 
 .member-list {

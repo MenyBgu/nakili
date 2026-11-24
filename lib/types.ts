@@ -14,7 +14,7 @@ export type Household = {
 
 export type HouseholdMember = {
   id: string;
-  userId: string;
+  userId: string | null;
   householdId: string;
   nickname: string;
   role: MemberRole;

@@ -37,14 +37,21 @@ test("creating a household shows the code, then tasks can be managed", async ({ 
   await expect(page.getByText("אין משימות ביום הזה")).toBeVisible();
 
   await openAddSheet(page);
+  await page.getByText("עוד אפשרויות").click();
+  await expect(page.getByLabel("תאריך התחלה")).toHaveValue(/^\d{4}-\d{2}-\d{2}$/);
+  await page.getByLabel("מה צריך לעשות?").fill("קניות לשבת");
+  await page.getByRole("button", { name: "שמירה" }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(page.locator(".task", { hasText: "קניות לשבת" })).toContainText("סידורים");
+
+  await openAddSheet(page);
   await page.getByLabel("מה צריך לעשות?").fill("השקיית עציצים");
-  await page.getByRole("button", { name: /סידורים/ }).click();
   await page.getByRole("button", { name: "שמירה" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
 
   const task = page.locator(".task", { hasText: "השקיית עציצים" });
   await expect(task).toBeVisible();
-  await expect(task).toContainText("סידורים");
+  await expect(task.locator(".task-icon")).toHaveText("🌿");
 
   await task.getByRole("button", { name: "סימון כבוצע: השקיית עציצים" }).click();
   await expect(task).toHaveClass(/completed/);
@@ -67,4 +74,26 @@ test("creating a household shows the code, then tasks can be managed", async ({ 
   await page.getByRole("button", { name: "הגדרות" }).click();
   await expect(page.getByRole("heading", { name: "הגדרות" })).toBeVisible();
   await expect(page.getByText("דנה (אני)")).toBeVisible();
+
+  await page.getByRole("button", { name: "הוספת בן/בת בית" }).click();
+  await page.getByLabel("שם בן/בת הבית").fill("נועה");
+  await page.getByRole("button", { name: "הוספה" }).click();
+  await expect(page.locator(".member-name", { hasText: "נועה" })).toBeVisible();
+
+  await page.getByRole("button", { name: "שינוי שם הבית" }).click();
+  await page.getByLabel("שינוי שם הבית").fill("הבית החדש של דנה");
+  await page.getByRole("button", { name: "שמירה" }).click();
+  await expect(page.locator(".brand small")).toHaveText("הבית החדש של דנה");
+
+  await page.getByRole("button", { name: "לשבוע" }).click();
+  await page.locator(".task", { hasText: "השקיית עציצים במרפסת" }).getByRole("button", { name: /עריכת/ }).click();
+  await page.getByText("עוד אפשרויות").click();
+  await page.getByRole("button", { name: "נועה" }).click();
+  await page.getByRole("button", { name: "שמירה" }).click();
+  await expect(page.locator(".task", { hasText: "השקיית עציצים במרפסת" })).toContainText("נועה");
+
+  await page.getByRole("button", { name: "הגדרות" }).click();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "הסרת נועה" }).click();
+  await expect(page.locator(".member-name", { hasText: "נועה" })).toBeHidden();
 });

@@ -1,66 +1,114 @@
 "use client";
 
-import { Check, Copy, Download, KeyRound, LogOut, Pencil, RotateCcw, Users } from "lucide-react";
+import { Check, Copy, Download, Home, LogOut, Pencil, Share2, Trash2, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
-import type { NakiliStore } from "@/lib/types";
+import type { HouseholdMember, NakiliStore } from "@/lib/types";
+
+function InlineEdit({
+  label,
+  value,
+  onSave,
+}: {
+  label: string;
+  value: string;
+  onSave: (value: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(value);
+  if (!editing) {
+    return (
+      <button className="icon-button ghost" onClick={() => { setText(value); setEditing(true); }} aria-label={label}>
+        <Pencil size={16} />
+      </button>
+    );
+  }
+  return (
+    <form
+      className="inline-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!text.trim()) return;
+        onSave(text.trim());
+        setEditing(false);
+      }}
+    >
+      <input autoFocus aria-label={label} value={text} onChange={(event) => setText(event.target.value)} maxLength={80} />
+      <button className="primary-button" type="submit">שמירה</button>
+    </form>
+  );
+}
+
+function memberLabel(member: HouseholdMember) {
+  if (member.role === "owner") return "יצר/ה את הבית";
+  return member.userId ? "מחובר/ת ממכשיר" : "בלי מכשיר · אפשר לשייך משימות";
+}
 
 export function SettingsView({
   store,
   isDemo,
-  onCopy,
-  onRotate,
-  onRename,
+  remote,
+  onCreateInvite,
+  onRenameHousehold,
+  onRenameMe,
   onWeekStart,
+  onAddMember,
+  onRemoveMember,
   onExport,
   onSignOut,
 }: {
   store: NakiliStore;
   isDemo: boolean;
-  onCopy: () => void;
-  onRotate: () => void;
-  onRename: (nickname: string) => void;
+  remote: boolean;
+  onCreateInvite: () => void;
+  onRenameHousehold: (name: string) => void;
+  onRenameMe: (nickname: string) => void;
   onWeekStart: (weekStart: 0 | 1) => void;
+  onAddMember: (nickname: string) => void;
+  onRemoveMember: (member: HouseholdMember) => void;
   onExport: (format: "json" | "csv") => void;
   onSignOut: () => void;
 }) {
   const me = store.members.find((member) => member.id === store.currentMemberId);
   const isOwner = me?.role === "owner";
-  const [editing, setEditing] = useState(false);
-  const [nickname, setNickname] = useState(me?.nickname ?? "");
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState("");
   const [copied, setCopied] = useState(false);
+  const code = store.household.accessCode;
+  const shareText = code
+    ? `מצטרפים לבית "${store.household.name}" בנקי-לי: פותחים את ${typeof window !== "undefined" ? window.location.origin : ""}, בוחרים "יש לי קוד בית" ומקלידים: ${code}`
+    : "";
 
   return (
     <div className="settings">
       <h1>הגדרות</h1>
 
       <section className="card settings-card">
-        <h2><KeyRound size={18} /> קוד הבית</h2>
-        {store.household.accessCode ? (
-          <>
-            <p className="muted">שתפו את הקוד רק עם בני הבית. איתו מצטרפים ונכנסים מחדש.</p>
-            <div className="code-box">
-              <code>{store.household.accessCode}</code>
+        <h2><Home size={18} /> הבית</h2>
+        <div className="setting-row">
+          <span className="setting-text">
+            <small>שם הבית</small>
+            <strong>{store.household.name}</strong>
+          </span>
+          {isOwner && !isDemo && (
+            <InlineEdit label="שינוי שם הבית" value={store.household.name} onSave={onRenameHousehold} />
+          )}
+        </div>
+        <div className="setting-row column">
+          <span className="setting-text"><small>השבוע מתחיל ביום</small></span>
+          <div className="segmented">
+            {([0, 1] as const).map((value) => (
               <button
-                className="secondary-button"
-                onClick={() => {
-                  onCopy();
-                  setCopied(true);
-                }}
+                key={value}
+                className={store.household.weekStart === value ? "selected" : ""}
+                onClick={() => onWeekStart(value)}
+                disabled={!isOwner}
+                aria-pressed={store.household.weekStart === value}
               >
-                {copied ? <><Check size={16} /> הועתק</> : <><Copy size={16} /> העתקה</>}
+                {value === 0 ? "ראשון" : "שני"}
               </button>
-            </div>
-          </>
-        ) : (
-          <p className="muted">
-            מטעמי פרטיות הקוד לא נשמר בגלוי. אם הוא אבד, אפשר ליצור קוד חדש — הקוד הישן יפסיק לעבוד.
-          </p>
-        )}
-        {isOwner && !isDemo && (
-          <button className="text-button" onClick={onRotate}>
-            <RotateCcw size={15} /> יצירת קוד חדש
-          </button>
-        )}
+            ))}
+          </div>
+        </div>
       </section>
 
       <section className="card settings-card">
@@ -69,66 +117,110 @@ export function SettingsView({
           {store.members.map((member) => (
             <li key={member.id}>
               <span className="avatar" aria-hidden="true">{member.nickname.slice(0, 1)}</span>
-              {member.id === me?.id && editing ? (
-                <form
-                  className="inline-form"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    if (!nickname.trim()) return;
-                    onRename(nickname.trim());
-                    setEditing(false);
-                  }}
+              <span className="member-name">
+                <strong>{member.nickname}{member.id === me?.id && <em> (אני)</em>}</strong>
+                <small>{memberLabel(member)}</small>
+              </span>
+              {member.id === me?.id && (
+                <InlineEdit label="שינוי הכינוי שלי" value={member.nickname} onSave={onRenameMe} />
+              )}
+              {isOwner && member.id !== me?.id && member.role !== "owner" && (
+                <button
+                  className="icon-button ghost"
+                  onClick={() => onRemoveMember(member)}
+                  aria-label={`הסרת ${member.nickname}`}
                 >
-                  <input autoFocus value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength={40} />
-                  <button className="primary-button" type="submit">שמירה</button>
-                </form>
-              ) : (
-                <>
-                  <span className="member-name">
-                    <strong>{member.nickname}{member.id === me?.id && <em> (אני)</em>}</strong>
-                    <small>{member.role === "owner" ? "יצר/ה את הבית" : "חבר/ת בית"}</small>
-                  </span>
-                  {member.id === me?.id && (
-                    <button className="icon-button ghost" onClick={() => setEditing(true)} aria-label="שינוי הכינוי שלי">
-                      <Pencil size={16} />
-                    </button>
-                  )}
-                </>
+                  <Trash2 size={16} />
+                </button>
               )}
             </li>
           ))}
         </ul>
+        {adding ? (
+          <form
+            className="inline-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!newName.trim()) return;
+              onAddMember(newName.trim());
+              setNewName("");
+              setAdding(false);
+            }}
+          >
+            <input
+              autoFocus
+              aria-label="שם בן/בת הבית"
+              placeholder="שם, למשל: נועה"
+              value={newName}
+              onChange={(event) => setNewName(event.target.value)}
+              maxLength={40}
+            />
+            <button className="primary-button" type="submit">הוספה</button>
+          </form>
+        ) : (
+          <button className="secondary-button" onClick={() => setAdding(true)}>
+            <UserPlus size={17} /> הוספת בן/בת בית
+          </button>
+        )}
+        <p className="muted small">
+          {remote
+            ? "מי שנוסף כאן יכול לקבל משימות. כדי שיסמן מהטלפון שלו — שלחו לו הזמנה, ובכניסה יבחר את אותו שם."
+            : "מי שנוסף כאן יכול לקבל משימות."}
+        </p>
       </section>
 
-      {isOwner && (
+      {remote && (
         <section className="card settings-card">
-          <h2>השבוע מתחיל ביום</h2>
-          <div className="segmented">
-            {([0, 1] as const).map((value) => (
-              <button
-                key={value}
-                className={store.household.weekStart === value ? "selected" : ""}
-                onClick={() => onWeekStart(value)}
-                aria-pressed={store.household.weekStart === value}
-              >
-                {value === 0 ? "ראשון" : "שני"}
+          <h2><Share2 size={18} /> הזמנה לטלפון נוסף</h2>
+          {code ? (
+            <>
+              <div className="code-box">
+                <code>{code}</code>
+              </div>
+              <div className="button-row">
+                {typeof navigator !== "undefined" && "share" in navigator && (
+                  <button
+                    className="primary-button"
+                    onClick={() => void navigator.share({ title: "נקי-לי", text: shareText }).catch(() => undefined)}
+                  >
+                    <Share2 size={16} /> שליחת הזמנה
+                  </button>
+                )}
+                <button
+                  className="secondary-button"
+                  onClick={() => {
+                    void navigator.clipboard?.writeText(shareText);
+                    setCopied(true);
+                  }}
+                >
+                  {copied ? <><Check size={16} /> הועתק</> : <><Copy size={16} /> העתקת הזמנה</>}
+                </button>
+              </div>
+              <button className="text-button" onClick={onCreateInvite}>יצירת קוד חדש במקום הזה</button>
+            </>
+          ) : (
+            <>
+              <p className="muted">
+                מטעמי פרטיות הקוד לא נשמר בגלוי. צרו קוד הזמנה חדש — טלפונים שכבר מחוברים ימשיכו לעבוד כרגיל.
+              </p>
+              <button className="primary-button" onClick={onCreateInvite} disabled={isDemo}>
+                <Share2 size={16} /> יצירת קוד הזמנה
               </button>
-            ))}
-          </div>
+            </>
+          )}
         </section>
       )}
 
       <section className="card settings-card">
         <h2><Download size={18} /> גיבוי</h2>
-        <p className="muted">הורדת עותק של המשימות למכשיר שלכם.</p>
         <div className="button-row">
-          <button className="secondary-button" onClick={() => onExport("json")}>קובץ גיבוי (JSON)</button>
-          <button className="secondary-button" onClick={() => onExport("csv")}>השבוע לאקסל (CSV)</button>
+          <button className="secondary-button" onClick={() => onExport("json")}>קובץ גיבוי</button>
+          <button className="secondary-button" onClick={() => onExport("csv")}>השבוע לאקסל</button>
         </div>
       </section>
 
       <button className="secondary-button large sign-out" onClick={onSignOut}>
-        <LogOut size={17} /> {isDemo ? "יציאה מהדוגמה" : "יציאה מהבית במכשיר הזה"}
+        <LogOut size={17} /> {isDemo ? "יציאה מהדוגמה" : "יציאה במכשיר הזה"}
       </button>
     </div>
   );
