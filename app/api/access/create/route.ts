@@ -2,13 +2,16 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
   createAccessCode,
+  errorResponse,
   getUserOrCreateAnonymousSession,
   hashAccessCode,
+  seedExampleChores,
 } from "@/app/api/access/_helpers";
 
 const bodySchema = z.object({
   householdName: z.string().trim().min(1).max(80),
   nickname: z.string().trim().min(1).max(40),
+  includeExamples: z.boolean().optional().default(false),
 });
 
 export async function POST(request: Request) {
@@ -17,7 +20,7 @@ export async function POST(request: Request) {
     const { admin, user, session, error } = await getUserOrCreateAnonymousSession();
 
     if (error || !user) {
-      return NextResponse.json({ error: error?.message ?? "לא ניתן להתחבר כרגע" }, { status: 503 });
+      return NextResponse.json({ error: "לא ניתן להתחבר כרגע. נסו שוב בעוד רגע." }, { status: 503 });
     }
 
     const code = createAccessCode();
@@ -33,7 +36,7 @@ export async function POST(request: Request) {
       .single();
 
     if (householdResult.error || !householdResult.data) {
-      return NextResponse.json({ error: householdResult.error?.message ?? "יצירת הבית נכשלה" }, { status: 500 });
+      return NextResponse.json({ error: "יצירת הבית נכשלה. נסו שוב." }, { status: 500 });
     }
 
     const household = householdResult.data;
@@ -55,19 +58,21 @@ export async function POST(request: Request) {
 
     if (memberResult.error || codeResult.error) {
       await admin.from("households").delete().eq("id", household.id);
-      return NextResponse.json({ error: "שמירת פרטי הבית נכשלה" }, { status: 500 });
+      return NextResponse.json({ error: "שמירת פרטי הבית נכשלה. נסו שוב." }, { status: 500 });
     }
+
+    const examplesAdded = body.includeExamples
+      ? await seedExampleChores(admin, household.id)
+      : true;
 
     return NextResponse.json({
       household,
       member: memberResult.data,
       code,
       session,
+      examplesAdded,
     });
   } catch (caught) {
-    return NextResponse.json(
-      { error: caught instanceof Error ? caught.message : "בקשה לא תקינה" },
-      { status: 400 },
-    );
+    return errorResponse(caught);
   }
 }

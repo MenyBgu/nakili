@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getUserOrCreateAnonymousSession, hashAccessCode } from "@/app/api/access/_helpers";
+import { errorResponse, getUserOrCreateAnonymousSession, hashAccessCode } from "@/app/api/access/_helpers";
 
 const bodySchema = z.object({
   code: z.string().trim().min(8).max(32),
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     const { admin, user, session, error } = await getUserOrCreateAnonymousSession();
 
     if (error || !user) {
-      return NextResponse.json({ error: error?.message ?? "לא ניתן להתחבר כרגע" }, { status: 503 });
+      return NextResponse.json({ error: "לא ניתן להתחבר כרגע. נסו שוב בעוד רגע." }, { status: 503 });
     }
 
     const inviteResult = await admin
@@ -61,9 +61,6 @@ export async function POST(request: Request) {
       session,
     });
   } catch (caught) {
-    return NextResponse.json(
-      { error: caught instanceof Error ? caught.message : "בקשה לא תקינה" },
-      { status: 400 },
-    );
+    return errorResponse(caught);
   }
 }

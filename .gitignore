@@ -1,5 +1,6 @@
 node_modules/
 .next/
+.next-e2e/
 out/
 coverage/
 playwright-report/
@@ -10,3 +11,5 @@ test-results/
 !.env.example
 *.log
 .DS_Store
+*.tsbuildinfo
+next-env.d.ts

@@ -33,8 +33,8 @@ npm run dev
 1. צרו פרויקט חינמי ב־Supabase והפעילו Anonymous Sign-ins.
 2. העתיקו `.env.example` ל־`.env.local`.
 3. הגדירו את כתובת הפרויקט, מפתח ה־anon ומפתח ה־service role.
-4. הריצו לפי הסדר את `supabase/migrations/0001_initial_schema.sql` ואת
-   `supabase/migrations/0002_add_chore_categories.sql` ב־SQL Editor.
+4. הריצו לפי הסדר ב־SQL Editor את `supabase/migrations/0001_initial_schema.sql`,
+   `supabase/migrations/0002_add_chore_categories.sql` ו־`supabase/migrations/0003_grants_and_hardening.sql`.
 5. הפעילו:
 
 ```bash

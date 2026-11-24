@@ -115,7 +115,7 @@ export const demoStore: NakiliStore = {
       title: "סידור המזווה",
       description: "לבדוק תוקף ולסדר לפי קבוצות",
       category: "organization",
-      icon: "🧺",
+      icon: "📦",
       color: "#dff1f3",
       assignedMemberId: null,
       active: true,
@@ -154,4 +154,5 @@ export const demoStore: NakiliStore = {
       completedAt: new Date().toISOString(),
     },
   ],
+  currentMemberId: "demo-member",
 };

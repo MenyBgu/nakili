@@ -52,6 +52,7 @@ export type NakiliStore = {
   members: HouseholdMember[];
   chores: Chore[];
   completions: Completion[];
+  currentMemberId?: string;
 };
 
 export type WeekDay = {
