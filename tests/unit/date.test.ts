@@ -54,6 +54,30 @@ describe("weekly planner dates", () => {
     expect(isChoreScheduled({ ...weekly, startDate: "2026-12-01" }, "2026-11-30")).toBe(false);
   });
 
+  it("matches every other week from the task start date", () => {
+    const biweekly = {
+      ...weekly,
+      frequency: "biweekly" as const,
+      weekdays: [4],
+      startDate: "2026-11-26",
+    };
+    expect(isChoreScheduled(biweekly, "2026-11-26")).toBe(true);
+    expect(isChoreScheduled(biweekly, "2026-12-03")).toBe(false);
+    expect(isChoreScheduled(biweekly, "2026-12-10")).toBe(true);
+  });
+
+  it("matches the same day of the month", () => {
+    const monthly = {
+      ...weekly,
+      frequency: "monthly" as const,
+      weekdays: [],
+      startDate: "2026-11-26",
+    };
+    expect(isChoreScheduled(monthly, "2026-11-26")).toBe(true);
+    expect(isChoreScheduled(monthly, "2026-12-26")).toBe(true);
+    expect(isChoreScheduled(monthly, "2027-01-25")).toBe(false);
+  });
+
   it("finds completion by occurrence date, not just chore", () => {
     const completion = {
       id: "completion",

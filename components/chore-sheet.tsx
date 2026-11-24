@@ -64,7 +64,9 @@ export function ChoreSheet({
 
   const submit = () => {
     if (!draft.title.trim()) return setError("מה צריך לעשות?");
-    if (draft.frequency === "weekly" && draft.weekdays.length === 0) return setError("בחרו לפחות יום אחד");
+    if ((draft.frequency === "weekly" || draft.frequency === "biweekly") && draft.weekdays.length === 0) {
+      return setError("בחרו לפחות יום אחד");
+    }
     if (draft.frequency === "one_off" && !draft.oneOffDate) return setError("בחרו תאריך");
     if (draft.startDate && draft.endDate && draft.endDate < draft.startDate) {
       return setError("תאריך הסיום מוקדם מתאריך ההתחלה");
@@ -112,25 +114,25 @@ export function ChoreSheet({
         </div>
 
         <div className="when">
-          <div className="segmented" role="group" aria-label="תדירות">
-            <button
-              type="button"
-              className={draft.frequency === "weekly" ? "selected" : ""}
-              onClick={() => update("frequency", "weekly")}
-              aria-pressed={draft.frequency === "weekly"}
-            >
-              כל שבוע
-            </button>
-            <button
-              type="button"
-              className={draft.frequency === "one_off" ? "selected" : ""}
-              onClick={() => update("frequency", "one_off")}
-              aria-pressed={draft.frequency === "one_off"}
-            >
-              פעם אחת
-            </button>
+          <div className="frequency-options" role="group" aria-label="תדירות">
+            {([
+              ["weekly", "כל שבוע"],
+              ["biweekly", "פעם בשבועיים"],
+              ["monthly", "פעם בחודש"],
+              ["one_off", "פעם אחת"],
+            ] as const).map(([value, label]) => (
+              <button
+                type="button"
+                key={value}
+                className={draft.frequency === value ? "selected" : ""}
+                onClick={() => update("frequency", value)}
+                aria-pressed={draft.frequency === value}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-          {draft.frequency === "weekly" ? (
+          {draft.frequency === "weekly" || draft.frequency === "biweekly" ? (
             <div className="weekday-picker" role="group" aria-label="ימים">
               {WEEKDAYS.map((day) => (
                 <button
@@ -157,7 +159,7 @@ export function ChoreSheet({
 
         <details className="more">
           <summary>עוד אפשרויות</summary>
-          {draft.frequency === "weekly" && (
+          {draft.frequency !== "one_off" && (
             <div className="two-cols">
               <label>
                 תאריך התחלה

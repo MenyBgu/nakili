@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { demoStore } from "@/lib/demo-data";
 import { localDate } from "@/lib/date";
-import type { Chore, ChoreCategory, NakiliStore } from "@/lib/types";
+import type { Chore, ChoreCategory, ChoreFrequency, NakiliStore } from "@/lib/types";
 
 export const STORAGE_KEY = "nakili:store:v1";
 
@@ -11,7 +11,7 @@ export type ChoreDraft = {
   category: ChoreCategory;
   icon: string;
   color: string;
-  frequency: "weekly" | "one_off";
+  frequency: ChoreFrequency;
   weekdays: number[];
   oneOffDate: string;
   startDate: string;
@@ -163,14 +163,14 @@ type ChoreRow = {
   sort_order: number;
   chore_schedules?:
     | {
-        frequency: "weekly" | "one_off";
+        frequency: ChoreFrequency;
         weekdays: number[];
         one_off_date: string | null;
         start_date: string | null;
         end_date: string | null;
       }
     | Array<{
-        frequency: "weekly" | "one_off";
+        frequency: ChoreFrequency;
         weekdays: number[];
         one_off_date: string | null;
         start_date: string | null;

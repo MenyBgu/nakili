@@ -165,7 +165,7 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
   const saveChore = async (draft: ChoreDraft) => {
     if (!store || !sheet) return;
     const existing = sheet.chore;
-    const weekly = draft.frequency === "weekly";
+    const recurring = draft.frequency !== "one_off";
     const fields = {
       title: draft.title.trim(),
       description: draft.description.trim(),
@@ -174,10 +174,10 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
       color: draft.color,
       assignedMemberId: draft.assignedMemberId || null,
       frequency: draft.frequency,
-      weekdays: weekly ? draft.weekdays : [],
-      oneOffDate: weekly ? null : draft.oneOffDate,
-      startDate: weekly ? draft.startDate || null : null,
-      endDate: weekly ? draft.endDate || null : null,
+      weekdays: draft.frequency === "weekly" || draft.frequency === "biweekly" ? draft.weekdays : [],
+      oneOffDate: recurring ? null : draft.oneOffDate,
+      startDate: recurring ? draft.startDate || null : null,
+      endDate: recurring ? draft.endDate || null : null,
     };
     setLoading(true);
     await run(async () => {

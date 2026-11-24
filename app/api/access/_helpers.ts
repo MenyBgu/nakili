@@ -44,7 +44,7 @@ export async function seedExampleChores(admin: SupabaseClient, householdId: stri
     return {
       chore_id: row.id,
       frequency: chore.frequency,
-      weekdays: chore.frequency === "weekly" ? chore.weekdays : [],
+      weekdays: chore.frequency === "one_off" || chore.frequency === "monthly" ? [] : chore.weekdays,
       one_off_date: chore.frequency === "one_off" ? oneOffDate : null,
     };
   });

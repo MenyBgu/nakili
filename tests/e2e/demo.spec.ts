@@ -40,6 +40,7 @@ test("creating a household shows the code, then tasks can be managed", async ({ 
   await page.getByText("עוד אפשרויות").click();
   await expect(page.getByLabel("תאריך התחלה")).toHaveValue(/^\d{4}-\d{2}-\d{2}$/);
   await page.getByLabel("מה צריך לעשות?").fill("קניות לשבת");
+  await page.getByRole("button", { name: "פעם בשבועיים" }).click();
   await page.getByRole("button", { name: "שמירה" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
   const quickDeleteTask = page.locator(".task", { hasText: "קניות לשבת" });
@@ -47,6 +48,14 @@ test("creating a household shows the code, then tasks can be managed", async ({ 
   page.once("dialog", (dialog) => dialog.accept());
   await quickDeleteTask.getByRole("button", { name: "מחיקת קניות לשבת" }).click();
   await expect(quickDeleteTask).toBeHidden();
+
+  await openAddSheet(page);
+  await page.getByLabel("מה צריך לעשות?").fill("ניקוי חודשי");
+  await page.getByRole("button", { name: "פעם בחודש" }).click();
+  await page.getByText("עוד אפשרויות").click();
+  await expect(page.getByLabel("תאריך התחלה")).toHaveValue(/^\d{4}-\d{2}-\d{2}$/);
+  await page.getByRole("button", { name: "שמירה" }).click();
+  await expect(page.locator(".task", { hasText: "ניקוי חודשי" })).toBeVisible();
 
   await openAddSheet(page);
   await page.getByLabel("מה צריך לעשות?").fill("השקיית עציצים");

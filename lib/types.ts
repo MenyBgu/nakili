@@ -1,4 +1,4 @@
-export type ChoreFrequency = "weekly" | "one_off";
+export type ChoreFrequency = "weekly" | "biweekly" | "monthly" | "one_off";
 export type ChoreCategory = "cleaning" | "errand" | "organization" | "maintenance" | "other";
 export type CompletionStatus = "completed" | "skipped";
 export type MemberRole = "owner" | "member";
