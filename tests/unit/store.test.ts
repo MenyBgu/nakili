@@ -9,6 +9,8 @@ describe("guessFromTitle", () => {
     ["לשטוף כלים", "cleaning", "🍽️"],
     ["קניות בסופר", "errand", "🛒"],
     ["לסדר את המקרר", "organization", "✨"],
+    ["ניקוי המקרר", "cleaning", "✨"],
+    ["סידור המטבח", "organization", "✨"],
     ["סידור ארון בגדים", "organization", "👕"],
     ["להחליף נורה במטבח", "maintenance", "🔧"],
     ["להשקות עציצים", "other", "🌿"],

@@ -988,6 +988,12 @@ textarea {
   gap: 10px;
 }
 
+.when-hint {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .frequency-options {
   display: grid;
   grid-template-columns: 1fr 1fr;

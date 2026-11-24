@@ -52,8 +52,8 @@ test("creating a household shows the code, then tasks can be managed", async ({ 
   await openAddSheet(page);
   await page.getByLabel("מה צריך לעשות?").fill("ניקוי חודשי");
   await page.getByRole("button", { name: "פעם בחודש" }).click();
-  await page.getByText("עוד אפשרויות").click();
-  await expect(page.getByLabel("תאריך התחלה")).toHaveValue(/^\d{4}-\d{2}-\d{2}$/);
+  await expect(page.getByLabel("תאריך ראשון")).toHaveValue(/^\d{4}-\d{2}-\d{2}$/);
+  await expect(page.getByText(/חוזר בכל חודש ב־\d+ לחודש/)).toBeVisible();
   await page.getByRole("button", { name: "שמירה" }).click();
   await expect(page.locator(".task", { hasText: "ניקוי חודשי" })).toBeVisible();
 

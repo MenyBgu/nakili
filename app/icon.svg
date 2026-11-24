@@ -1,12 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="g" x1="8" y1="5" x2="41" y2="44" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#3F9678"/>
-      <stop offset="1" stop-color="#205846"/>
+    <linearGradient id="bg" x1="60" y1="20" x2="452" y2="492" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4DB38D"/>
+      <stop offset=".52" stop-color="#2C7A62"/>
+      <stop offset="1" stop-color="#174536"/>
     </linearGradient>
+    <linearGradient id="gold" x1="190" y1="250" x2="330" y2="370" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE3A3"/>
+      <stop offset="1" stop-color="#F2AE45"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(150 96) rotate(50) scale(330)">
+      <stop stop-color="#fff" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
   </defs>
-  <rect width="48" height="48" rx="16" fill="url(#g)"/>
-  <path d="M13 34V14l22 20V14" fill="none" stroke="#F8FCF6" stroke-linecap="round" stroke-linejoin="round" stroke-width="4.2"/>
-  <path d="M34 9.5v5M31.5 12h5" fill="none" stroke="#F1B95B" stroke-linecap="round" stroke-width="2.3"/>
-  <circle cx="13" cy="34" r="2.4" fill="#F1B95B"/>
-</svg>
+  <rect width="512" height="512" rx="118" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="118" fill="url(#glow)"/>
+  <path d="M104 252 256 126l152 126v124a40 40 0 0 1-40 40H144a40 40 0 0 1-40-40Z" fill="#fff" fill-opacity=".12"/>
+  <path d="M104 252 256 126l152 126v124a40 40 0 0 1-40 40H144a40 40 0 0 1-40-40Z" fill="none" stroke="#F7FCF8" stroke-width="44" stroke-linejoin="round"/>
+  <path d="m180 302 50 50 104-108" fill="none" stroke="url(#gold)" stroke-width="50" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M410 52c8 36 20 48 56 56-36 8-48 20-56 56-8-36-20-48-56-56 36-8 48-20 56-56Z" fill="#FFE3A3"/>
+  </svg>

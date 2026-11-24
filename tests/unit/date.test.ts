@@ -66,6 +66,30 @@ describe("weekly planner dates", () => {
     expect(isChoreScheduled(biweekly, "2026-12-10")).toBe(true);
   });
 
+  it("keeps the two-week rhythm across a daylight-saving change", () => {
+    const biweekly = { ...weekly, frequency: "biweekly" as const, weekdays: [4], startDate: "2026-10-15" };
+    expect(isChoreScheduled(biweekly, "2026-10-22")).toBe(false);
+    expect(isChoreScheduled(biweekly, "2026-10-29")).toBe(true);
+    expect(isChoreScheduled(biweekly, "2027-03-18")).toBe(true);
+    expect(isChoreScheduled(biweekly, "2027-03-25")).toBe(false);
+  });
+
+  it("follows calendar weeks when a two-week task has several days", () => {
+    const biweekly = { ...weekly, frequency: "biweekly" as const, weekdays: [0, 4], startDate: "2026-11-26" };
+    expect(isChoreScheduled(biweekly, "2026-11-29")).toBe(false);
+    expect(isChoreScheduled(biweekly, "2026-12-06")).toBe(true);
+    expect(isChoreScheduled(biweekly, "2026-12-10")).toBe(true);
+    expect(isChoreScheduled(biweekly, "2026-11-19")).toBe(false);
+  });
+
+  it("moves a monthly task to the last day in shorter months", () => {
+    const monthly = { ...weekly, frequency: "monthly" as const, weekdays: [], startDate: "2027-01-31" };
+    expect(isChoreScheduled(monthly, "2027-02-28")).toBe(true);
+    expect(isChoreScheduled(monthly, "2027-03-28")).toBe(false);
+    expect(isChoreScheduled(monthly, "2027-03-31")).toBe(true);
+    expect(isChoreScheduled(monthly, "2026-12-31")).toBe(false);
+  });
+
   it("matches the same day of the month", () => {
     const monthly = {
       ...weekly,

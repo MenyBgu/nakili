@@ -69,11 +69,16 @@ const iconKeywords: Array<[string, string[]]> = [
 
 export function guessFromTitle(title: string) {
   const words = title.trim().split(/\s+/);
-  const has = (keywords: string[]) =>
-    words.some((word) => keywords.some((keyword) => word.replace(/^[והבלמש]/, "") === keyword || word === keyword || word.startsWith(keyword)));
-  const category = categoryKeywords.find(([, keywords]) => has(keywords))?.[0];
-  const meta = categoryMeta(category ?? "other");
-  const icon = iconKeywords.find(([, keywords]) => has(keywords))?.[0] ?? meta.icon;
+  const matches = (word: string, keywords: string[]) =>
+    keywords.some((keyword) => word.replace(/^[והבלמש]/, "") === keyword || word === keyword || word.startsWith(keyword));
+  const firstMatch = <T,>(table: Array<[T, string[]]>) => {
+    for (const word of words) {
+      const hit = table.find(([, keywords]) => matches(word, keywords));
+      if (hit) return hit[0];
+    }
+  };
+  const meta = categoryMeta(firstMatch(categoryKeywords) ?? "other");
+  const icon = firstMatch(iconKeywords) ?? meta.icon;
   return { category: meta.value, icon, color: meta.color };
 }
 

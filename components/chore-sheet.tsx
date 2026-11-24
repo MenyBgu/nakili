@@ -2,7 +2,9 @@
 
 import { Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { WEEKDAYS } from "@/lib/date";
+import { format } from "date-fns";
+import { he } from "date-fns/locale";
+import { WEEKDAYS, parseLocalDate } from "@/lib/date";
 import {
   blankDraft,
   categoryMeta,
@@ -68,6 +70,9 @@ export function ChoreSheet({
       return setError("בחרו לפחות יום אחד");
     }
     if (draft.frequency === "one_off" && !draft.oneOffDate) return setError("בחרו תאריך");
+    if ((draft.frequency === "biweekly" || draft.frequency === "monthly") && !draft.startDate) {
+      return setError("בחרו תאריך התחלה");
+    }
     if (draft.startDate && draft.endDate && draft.endDate < draft.startDate) {
       return setError("תאריך הסיום מוקדם מתאריך ההתחלה");
     }
@@ -125,7 +130,14 @@ export function ChoreSheet({
                 type="button"
                 key={value}
                 className={draft.frequency === value ? "selected" : ""}
-                onClick={() => update("frequency", value)}
+                onClick={() =>
+                  setDraft((current) => ({
+                    ...current,
+                    frequency: value,
+                    startDate: current.startDate || date,
+                    weekdays: current.weekdays.length ? current.weekdays : [parseLocalDate(date).getDay()],
+                  }))
+                }
                 aria-pressed={draft.frequency === value}
               >
                 {label}
@@ -147,6 +159,13 @@ export function ChoreSheet({
                 </button>
               ))}
             </div>
+          ) : draft.frequency === "monthly" ? (
+            <input
+              type="date"
+              aria-label="תאריך ראשון"
+              value={draft.startDate}
+              onChange={(event) => update("startDate", event.target.value)}
+            />
           ) : (
             <input
               type="date"
@@ -155,16 +174,25 @@ export function ChoreSheet({
               onChange={(event) => update("oneOffDate", event.target.value)}
             />
           )}
+          {draft.startDate && (draft.frequency === "monthly" || draft.frequency === "biweekly") && (
+            <p className="when-hint">
+              {draft.frequency === "monthly"
+                ? `חוזר בכל חודש ב־${parseLocalDate(draft.startDate).getDate()} לחודש`
+                : `החל מ־${format(parseLocalDate(draft.startDate), "d בMMMM", { locale: he })}, כל שבוע שני`}
+            </p>
+          )}
         </div>
 
         <details className="more">
           <summary>עוד אפשרויות</summary>
           {draft.frequency !== "one_off" && (
             <div className="two-cols">
-              <label>
-                תאריך התחלה
-                <input type="date" value={draft.startDate} onChange={(event) => update("startDate", event.target.value)} />
-              </label>
+              {draft.frequency !== "monthly" && (
+                <label>
+                  תאריך התחלה
+                  <input type="date" value={draft.startDate} onChange={(event) => update("startDate", event.target.value)} />
+                </label>
+              )}
               <label>
                 תאריך סיום
                 <input type="date" value={draft.endDate} onChange={(event) => update("endDate", event.target.value)} />

@@ -1,4 +1,13 @@
-import { addDays, differenceInCalendarMonths, format, getDaysInMonth, isSameDay, parseISO, startOfWeek } from "date-fns";
+import {
+  addDays,
+  differenceInCalendarMonths,
+  differenceInCalendarWeeks,
+  format,
+  getDaysInMonth,
+  isSameDay,
+  parseISO,
+  startOfWeek,
+} from "date-fns";
 import { he } from "date-fns/locale";
 import type { Chore, Completion, Household, WeekDay } from "@/lib/types";
 
@@ -66,11 +75,8 @@ export function isChoreScheduled(chore: Chore, date: string) {
   if (!chore.weekdays.includes(current.getDay())) return false;
   if (chore.frequency === "biweekly") {
     if (!chore.startDate) return false;
-    const start = parseLocalDate(chore.startDate);
-    const daysSinceStart = Math.floor(
-      (current.getTime() - start.getTime()) / (24 * 60 * 60 * 1000),
-    );
-    return Math.floor(daysSinceStart / 7) % 2 === 0;
+    const weeks = differenceInCalendarWeeks(current, parseLocalDate(chore.startDate), { weekStartsOn: 0 });
+    return weeks % 2 === 0;
   }
   return true;
 }
