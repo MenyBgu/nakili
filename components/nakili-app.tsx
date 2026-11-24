@@ -235,8 +235,7 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
     setLoading(false);
   };
 
-  const deleteChore = async () => {
-    const chore = sheet?.chore;
+  const deleteChore = async (chore: Chore) => {
     if (!store || !chore || !window.confirm(`למחוק את "${chore.title}"?`)) return;
     setLoading(true);
     await run(async () => {
@@ -251,7 +250,7 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
           completions: store.completions.filter((item) => item.choreId !== chore.id),
         });
       }
-      setSheet(null);
+      setSheet((current) => current?.chore?.id === chore.id ? null : current);
       showToast("המשימה נמחקה");
     }, "מחיקת המשימה נכשלה");
     setLoading(false);
@@ -564,6 +563,7 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
           onShift={shift}
           onAdd={(date) => setSheet({ chore: null, date })}
           onEdit={(chore) => setSheet({ chore, date: selectedDate })}
+          onDelete={(chore) => void deleteChore(chore)}
           onToggle={toggleDone}
           onSkip={toggleSkip}
         />
@@ -592,7 +592,7 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
           saving={loading}
           onClose={() => setSheet(null)}
           onSave={(draft) => void saveChore(draft)}
-          onDelete={sheet.chore ? () => void deleteChore() : undefined}
+          onDelete={sheet.chore ? () => void deleteChore(sheet.chore as Chore) : undefined}
         />
       )}
 

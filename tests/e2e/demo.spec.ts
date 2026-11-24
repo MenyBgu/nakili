@@ -42,7 +42,11 @@ test("creating a household shows the code, then tasks can be managed", async ({ 
   await page.getByLabel("מה צריך לעשות?").fill("קניות לשבת");
   await page.getByRole("button", { name: "שמירה" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
-  await expect(page.locator(".task", { hasText: "קניות לשבת" })).toContainText("סידורים");
+  const quickDeleteTask = page.locator(".task", { hasText: "קניות לשבת" });
+  await expect(quickDeleteTask).toContainText("סידורים");
+  page.once("dialog", (dialog) => dialog.accept());
+  await quickDeleteTask.getByRole("button", { name: "מחיקת קניות לשבת" }).click();
+  await expect(quickDeleteTask).toBeHidden();
 
   await openAddSheet(page);
   await page.getByLabel("מה צריך לעשות?").fill("השקיית עציצים");

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronLeft, ChevronRight, Plus, Undo2 } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Plus, Trash2, Undo2 } from "lucide-react";
 import type { CSSProperties } from "react";
 import { choresForDate, completionFor, formatWeekTitle, parseLocalDate, weekDays } from "@/lib/date";
 import { categoryMeta } from "@/lib/store";
@@ -16,6 +16,7 @@ export function WeekView({
   onShift,
   onAdd,
   onEdit,
+  onDelete,
   onToggle,
   onSkip,
 }: {
@@ -26,6 +27,7 @@ export function WeekView({
   onShift: (amount: number) => void;
   onAdd: (date: string) => void;
   onEdit: (chore: Chore) => void;
+  onDelete: (chore: Chore) => void;
   onToggle: (chore: Chore, date: string) => void;
   onSkip: (chore: Chore, date: string) => void;
 }) {
@@ -140,6 +142,14 @@ export function WeekView({
                       דילוג
                     </button>
                   )}
+                  <button
+                    className="task-delete"
+                    onClick={() => onDelete(chore)}
+                    aria-label={`מחיקת ${chore.title}`}
+                    title="מחיקה"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </li>
               );
             })}

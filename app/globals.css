@@ -853,6 +853,24 @@ textarea {
   background: var(--surface-soft);
 }
 
+.task-delete {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  color: #a5b2aa;
+  background: transparent;
+}
+
+.task-delete:hover,
+.task-delete:focus-visible {
+  color: var(--danger);
+  background: #fff0ee;
+}
+
 .empty {
   display: grid;
   justify-items: center;
