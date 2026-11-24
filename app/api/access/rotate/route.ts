@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createAccessCode, errorResponse, hashAccessCode } from "@/app/api/access/_helpers";
+import { createAccessCode, errorResponse, findMemberForUser, hashAccessCode } from "@/app/api/access/_helpers";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 
 const bodySchema = z.object({
@@ -17,14 +17,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "צריך להיות מחוברים לבית" }, { status: 401 });
     }
 
-    const membership = await admin
-      .from("household_members")
-      .select("id")
-      .eq("user_id", data.user.id)
-      .eq("household_id", body.householdId)
-      .maybeSingle();
-
-    if (membership.error || !membership.data) {
+    const membership = await findMemberForUser(admin, data.user.id, body.householdId);
+    if (membership.error || !membership.member) {
       return NextResponse.json({ error: "אין הרשאה לבית הזה" }, { status: 403 });
     }
 

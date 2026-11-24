@@ -28,7 +28,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Chore, CompletionStatus, HouseholdMember, NakiliStore } from "@/lib/types";
 
 type Screen = "week" | "settings";
-type AccessMode = "landing" | "create" | "join";
+type AccessMode = "landing" | "create" | "join" | "pair";
 type SheetState = { chore: Chore | null; date: string } | null;
 
 export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean }) {
@@ -41,6 +41,7 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
   const [selectedDate, setSelectedDate] = useState(() => localDate());
   const [sheet, setSheet] = useState<SheetState>(null);
   const [revealCode, setRevealCode] = useState<string | null>(null);
+  const [devicePairingCode, setDevicePairingCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
@@ -113,15 +114,21 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
     try {
       if (supabase) {
         const creating = accessMode === "create";
-        const response = await fetch(creating ? "/api/access/create" : "/api/access/join", {
+        const pairing = accessMode === "pair";
+        const response = await fetch(
+          creating ? "/api/access/create" : pairing ? "/api/access/device/join" : "/api/access/join",
+          {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(
             creating
               ? { householdName: values.name.trim(), nickname, includeExamples: values.includeExamples }
+              : pairing
+                ? { code: values.code.trim() }
               : { code: values.code.trim(), nickname },
           ),
-        });
+          },
+        );
         const result = (await response.json().catch(() => ({}))) as {
           error?: string;
           code?: string;
@@ -132,7 +139,7 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
         if (result.session) await supabase.auth.setSession(result.session);
         const next = await fetchRemoteStore(supabase);
         if (!next) throw new Error("הבית נוצר אבל לא נטען. נסו לרענן את הדף.");
-        const knownCode = creating ? result.code : values.code.trim().toUpperCase();
+        const knownCode = !pairing ? (creating ? result.code : values.code.trim().toUpperCase()) : undefined;
         if (knownCode) {
           rememberCode(next.household.id, knownCode);
           next.household.accessCode = knownCode;
@@ -328,6 +335,21 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
     }, "יצירת קוד חדש נכשלה");
   };
 
+  const createDevicePairing = async () => {
+    if (!store || !remote) return;
+    await run(async () => {
+      const response = await fetch("/api/access/device/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ householdId: store.household.id }),
+      });
+      const result = (await response.json().catch(() => ({}))) as { code?: string; error?: string };
+      if (!response.ok || !result.code) throw new Error(result.error ?? "יצירת קוד החיבור נכשלה");
+      setDevicePairingCode(result.code);
+      showToast("נוצר קוד חיבור למכשיר");
+    }, "יצירת קוד החיבור נכשלה");
+  };
+
   const callMembers = async (method: "POST" | "DELETE", body: Record<string, string>) => {
     const response = await fetch("/api/members", {
       method,
@@ -478,6 +500,7 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
     if (accessMode === "landing") {
       return (
         <Landing
+          showDevicePairing={Boolean(supabase)}
           onSelect={(mode) => {
             setError("");
             setAccessMode(mode);
@@ -572,7 +595,9 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
           store={store}
           isDemo={isDemo}
           remote={Boolean(remote)}
+          devicePairingCode={devicePairingCode}
           onCreateInvite={() => void createInvite()}
+          onCreateDevicePairing={() => void createDevicePairing()}
           onRenameHousehold={(name) => void renameHousehold(name)}
           onRenameMe={(nickname) => void rename(nickname)}
           onAddMember={(nickname) => void addMember(nickname)}

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Check, Copy, KeyRound, Plus } from "lucide-react";
+import { ArrowRight, Check, Copy, KeyRound, Plus, Smartphone } from "lucide-react";
 import { useState } from "react";
 import { NakiliLogo } from "@/components/nakili-logo";
 
@@ -15,9 +15,11 @@ const previewTasks = [
 export function Landing({
   onSelect,
   onDemo,
+  showDevicePairing,
 }: {
-  onSelect: (mode: "create" | "join") => void;
+  onSelect: (mode: "create" | "join" | "pair") => void;
   onDemo: () => void;
+  showDevicePairing: boolean;
 }) {
   return (
     <main className="shell landing">
@@ -46,6 +48,11 @@ export function Landing({
           <button className="secondary-button large" onClick={() => onSelect("join")}>
             <KeyRound size={18} /> יש לי קוד בית
           </button>
+          {showDevicePairing && (
+            <button className="secondary-button large" onClick={() => onSelect("pair")}>
+              <Smartphone size={18} /> חיבור מכשיר נוסף
+            </button>
+          )}
           <button className="text-button" onClick={onDemo}>רק להציץ בדוגמה</button>
         </div>
         <p className="privacy-note">בלי הרשמה ובלי פרטים אישיים. רק קוד בית פרטי.</p>
@@ -61,7 +68,7 @@ export function AccessForm({
   onBack,
   onSubmit,
 }: {
-  mode: "create" | "join";
+  mode: "create" | "join" | "pair";
   loading: boolean;
   error: string;
   onBack: () => void;
@@ -71,7 +78,9 @@ export function AccessForm({
   const [nickname, setNickname] = useState("");
   const [code, setCode] = useState("");
   const [includeExamples, setIncludeExamples] = useState(true);
-  const ready = nickname.trim() && (mode === "create" ? name.trim() : code.trim().length >= 8);
+  const ready = mode === "pair"
+    ? code.trim().length >= 8
+    : nickname.trim() && (mode === "create" ? name.trim() : code.trim().length >= 8);
 
   return (
     <main className="shell narrow">
@@ -86,10 +95,12 @@ export function AccessForm({
         }}
       >
         <NakiliLogo size={52} title="" />
-        <h1>{mode === "create" ? "בית חדש" : "הצטרפות לבית"}</h1>
+        <h1>{mode === "create" ? "בית חדש" : mode === "pair" ? "חיבור מכשיר נוסף" : "הצטרפות לבית"}</h1>
         <p className="muted">
           {mode === "create"
             ? "שני פרטים קטנים ומתחילים. תקבלו קוד בית לשיתוף עם בני הבית."
+            : mode === "pair"
+              ? "במכשיר שכבר מחובר פתחו הגדרות, בחרו חיבור מכשיר נוסף והקלידו כאן את הקוד."
             : "הקלידו את הקוד שקיבלתם ממי שיצר את הבית."}
         </p>
         {mode === "create" ? (
@@ -105,7 +116,7 @@ export function AccessForm({
           </label>
         ) : (
           <label>
-            קוד הבית
+            {mode === "pair" ? "קוד חיבור למכשיר" : "קוד הבית"}
             <input
               autoFocus
               dir="ltr"
@@ -119,15 +130,17 @@ export function AccessForm({
             />
           </label>
         )}
-        <label>
-          איך לקרוא לך?
-          <input
-            value={nickname}
-            onChange={(event) => setNickname(event.target.value)}
-            placeholder="למשל: דני"
-            maxLength={40}
-          />
-        </label>
+        {mode !== "pair" && (
+          <label>
+            איך לקרוא לך?
+            <input
+              value={nickname}
+              onChange={(event) => setNickname(event.target.value)}
+              placeholder="למשל: דני"
+              maxLength={40}
+            />
+          </label>
+        )}
         {mode === "create" && (
           <label className="switch-row">
             <input
@@ -141,7 +154,7 @@ export function AccessForm({
         )}
         {error && <div className="notice error" role="alert">{error}</div>}
         <button className="primary-button large" type="submit" disabled={loading || !ready}>
-          {loading ? "רק רגע..." : mode === "create" ? "יצירת הבית" : "כניסה לבית"}
+          {loading ? "רק רגע..." : mode === "create" ? "יצירת הבית" : mode === "pair" ? "חיבור המכשיר" : "כניסה לבית"}
         </button>
       </form>
     </main>

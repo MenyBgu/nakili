@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, Download, Home, LogOut, Pencil, Share2, Trash2, UserPlus, Users } from "lucide-react";
+import { Check, Copy, Download, Home, LogOut, Pencil, Share2, Smartphone, Trash2, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
 import type { HouseholdMember, NakiliStore } from "@/lib/types";
 
@@ -47,7 +47,9 @@ export function SettingsView({
   store,
   isDemo,
   remote,
+  devicePairingCode,
   onCreateInvite,
+  onCreateDevicePairing,
   onRenameHousehold,
   onRenameMe,
   onWeekStart,
@@ -59,7 +61,9 @@ export function SettingsView({
   store: NakiliStore;
   isDemo: boolean;
   remote: boolean;
+  devicePairingCode: string | null;
   onCreateInvite: () => void;
+  onCreateDevicePairing: () => void;
   onRenameHousehold: (name: string) => void;
   onRenameMe: (nickname: string) => void;
   onWeekStart: (weekStart: 0 | 1) => void;
@@ -168,6 +172,54 @@ export function SettingsView({
             : "מי שנוסף כאן יכול לקבל משימות."}
         </p>
       </section>
+
+      {remote && (
+        <section className="card settings-card">
+          <h2><Smartphone size={18} /> חיבור מכשיר נוסף</h2>
+          {devicePairingCode ? (
+            <>
+              <p className="muted">
+                הקוד חד־פעמי ותקף ל־10 דקות. במכשיר החדש בחרו „חיבור מכשיר נוסף” והזינו אותו.
+              </p>
+              <div className="code-box">
+                <code>{devicePairingCode}</code>
+              </div>
+              <div className="button-row">
+                {typeof navigator !== "undefined" && "share" in navigator && (
+                  <button
+                    className="primary-button"
+                    onClick={() => void navigator.share({
+                      title: "חיבור מכשיר לנקי-לי",
+                      text: `קוד חיבור מכשיר לנקי-לי: ${devicePairingCode}`,
+                    }).catch(() => undefined)}
+                  >
+                    <Share2 size={16} /> שליחת קוד
+                  </button>
+                )}
+                <button
+                  className="secondary-button"
+                  onClick={() => {
+                    void navigator.clipboard?.writeText(devicePairingCode);
+                    setCopied(true);
+                  }}
+                >
+                  {copied ? <><Check size={16} /> הועתק</> : <><Copy size={16} /> העתקת קוד</>}
+                </button>
+              </div>
+              <button className="text-button" onClick={onCreateDevicePairing}>יצירת קוד חדש</button>
+            </>
+          ) : (
+            <>
+              <p className="muted">
+                התחברו במחשב או בטלפון נוסף כאותו משתמש, בלי להזין כינוי ובלי להפוך לחבר בית חדש.
+              </p>
+              <button className="primary-button" onClick={onCreateDevicePairing}>
+                <Smartphone size={16} /> יצירת קוד חיבור
+              </button>
+            </>
+          )}
+        </section>
+      )}
 
       {remote && (
         <section className="card settings-card">

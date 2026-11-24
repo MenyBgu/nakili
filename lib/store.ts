@@ -210,17 +210,32 @@ export async function fetchRemoteStore(client: SupabaseClient): Promise<NakiliSt
   const user = userResult.data.user;
   if (!user) return null;
 
-  const membership = await client
-    .from("household_members")
-    .select("id,household_id")
-    .eq("user_id", user.id)
-    .order("joined_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (membership.error) throw new Error("טעינת הבית נכשלה");
-  if (!membership.data) return null;
+  const [directMembership, deviceLink] = await Promise.all([
+    client
+      .from("household_members")
+      .select("id,household_id")
+      .eq("user_id", user.id)
+      .order("joined_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    client.from("household_member_devices").select("member_id").eq("user_id", user.id).maybeSingle(),
+  ]);
+  const deviceTableMissing = deviceLink.error && ["42P01", "PGRST205"].includes(deviceLink.error.code);
+  if (directMembership.error || (deviceLink.error && !deviceTableMissing)) throw new Error("טעינת הבית נכשלה");
 
-  const householdId = membership.data.household_id;
+  let membership: { id: string; household_id: string } | null = directMembership.data;
+  if (!membership && !deviceTableMissing && deviceLink.data) {
+    const paired = await client
+      .from("household_members")
+      .select("id,household_id")
+      .eq("id", deviceLink.data.member_id)
+      .single();
+    if (paired.error) throw new Error("טעינת הבית נכשלה");
+    membership = paired.data;
+  }
+  if (!membership) return null;
+
+  const householdId = membership.household_id;
   const [household, members, chores, completions] = await Promise.all([
     client.from("households").select("id,name,timezone,week_start,owner_id").eq("id", householdId).single(),
     client
@@ -268,7 +283,7 @@ export async function fetchRemoteStore(client: SupabaseClient): Promise<NakiliSt
       completedBy: completion.completed_by,
       completedAt: completion.completed_at,
     })),
-    currentMemberId: membership.data.id,
+    currentMemberId: membership.id,
   };
 }
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { errorResponse } from "@/app/api/access/_helpers";
+import { errorResponse, findMemberForUser } from "@/app/api/access/_helpers";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 
 const addSchema = z.object({
@@ -19,13 +19,8 @@ async function callerMembership(householdId: string) {
   const { data } = await supabase.auth.getUser();
   const user = data.user;
   if (!user) return { admin, membership: null };
-  const membership = await admin
-    .from("household_members")
-    .select("id,role")
-    .eq("household_id", householdId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  return { admin, membership: membership.data };
+  const membership = await findMemberForUser(admin, user.id, householdId);
+  return { admin, membership: membership.member };
 }
 
 export async function POST(request: Request) {

@@ -2,8 +2,10 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 const description = "ניקיון, סידורים וארגון לכל בני הבית, בשבוע אחד ברור.";
+const metadataBase = new URL(process.env.NEXT_PUBLIC_SITE_URL?.trim() || "http://localhost:3000");
 
 export const metadata: Metadata = {
+  metadataBase,
   title: "נקי-לי | ניהול משימות לבית",
   description,
   applicationName: "נקי-לי",

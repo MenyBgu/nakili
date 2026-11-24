@@ -15,6 +15,11 @@ export function createAccessCode() {
   return `NKI-${value.slice(0, 8)}-${value.slice(8, 16)}`;
 }
 
+export function createDevicePairingCode() {
+  const value = randomBytes(8).toString("hex").toUpperCase();
+  return `NKM-${value.slice(0, 8)}-${value.slice(8, 16)}`;
+}
+
 export function errorResponse(caught: unknown) {
   const message = caught instanceof z.ZodError
     ? "נא למלא את כל השדות כראוי"
@@ -79,4 +84,34 @@ export async function getUserOrCreateAnonymousSession() {
     session: anonymous.data.session,
     error: null,
   };
+}
+
+export async function findMemberForUser(
+  admin: SupabaseClient,
+  userId: string,
+  householdId?: string,
+) {
+  let directQuery = admin
+    .from("household_members")
+    .select("id,household_id,nickname,role")
+    .eq("user_id", userId);
+  if (householdId) directQuery = directQuery.eq("household_id", householdId);
+  const direct = await directQuery.maybeSingle();
+  if (direct.error) return { member: null, error: direct.error };
+  if (direct.data) return { member: direct.data, error: null };
+
+  const device = await admin
+    .from("household_member_devices")
+    .select("member_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (device.error || !device.data) return { member: null, error: device.error ?? null };
+
+  let memberQuery = admin
+    .from("household_members")
+    .select("id,household_id,nickname,role")
+    .eq("id", device.data.member_id);
+  if (householdId) memberQuery = memberQuery.eq("household_id", householdId);
+  const member = await memberQuery.maybeSingle();
+  return { member: member.data, error: member.error };
 }

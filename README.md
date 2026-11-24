@@ -12,6 +12,7 @@
 - סימון ביצוע, ביטול ביצוע ודילוג על מופע יחיד.
 - חלוקת אחריות אופציונלית בין בני הבית.
 - קוד בית אקראי במקום תעודת זהות או מידע אישי.
+- חיבור מכשיר נוסף לאותו משתמש באמצעות קוד חד־פעמי.
 - מצב מקומי מלא ללא חשבונות, כדי להריץ את הפרויקט מיד.
 - Supabase Anonymous Auth, Postgres ו־RLS במצב Production.
 - ייצוא JSON/CSV מקומי.
@@ -34,7 +35,7 @@ npm run dev
 2. העתיקו `.env.example` ל־`.env.local`.
 3. הגדירו את כתובת הפרויקט, מפתח ה־anon ומפתח ה־service role.
 4. הריצו לפי הסדר ב־SQL Editor את `supabase/migrations/0001_initial_schema.sql`,
-   `supabase/migrations/0002_add_chore_categories.sql`, `supabase/migrations/0003_grants_and_hardening.sql`, `supabase/migrations/0004_member_profiles.sql` ו־`supabase/migrations/0005_chore_recurrence.sql`.
+   `supabase/migrations/0002_add_chore_categories.sql`, `supabase/migrations/0003_grants_and_hardening.sql`, `supabase/migrations/0004_member_profiles.sql`, `supabase/migrations/0005_chore_recurrence.sql` ו־`supabase/migrations/0006_device_pairing.sql`.
 5. הפעילו:
 
 ```bash
