@@ -351,7 +351,7 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
     }, "יצירת קוד החיבור נכשלה");
   };
 
-  const callMembers = async (method: "POST" | "DELETE", body: Record<string, string>) => {
+  const callMembers = async (method: "POST" | "DELETE" | "PATCH", body: Record<string, string>) => {
     const response = await fetch("/api/members", {
       method,
       headers: { "Content-Type": "application/json" },
@@ -378,6 +378,20 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
       }
       showToast(`${nickname} נוסף/ה לבית`);
     }, "ההוספה נכשלה");
+  };
+
+  const setManager = async (member: HouseholdMember, manager: boolean) => {
+    if (!store) return;
+    const question = manager
+      ? `למנות את ${member.nickname} כמנהל/ת? מנהלים יכולים לשנות את שם הבית, להסיר בני בית ולמנות מנהלים.`
+      : `להסיר את ${member.nickname} מניהול הבית? הוא/היא יישארו בבית כבני בית רגילים.`;
+    if (!window.confirm(question)) return;
+    await run(async () => {
+      const role = manager ? "owner" : "member";
+      await callMembers("PATCH", { householdId: store.household.id, memberId: member.id, role });
+      await reload();
+      showToast(manager ? `${member.nickname} מונה/תה למנהל/ת` : `${member.nickname} כבר לא מנהל/ת`);
+    }, "העדכון נכשל");
   };
 
   const removeMember = async (member: HouseholdMember) => {
@@ -610,6 +624,7 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
           onRenameMe={(nickname) => void rename(nickname)}
           onAddMember={(nickname) => void addMember(nickname)}
           onRemoveMember={(member) => void removeMember(member)}
+          onSetManager={(member, manager) => void setManager(member, manager)}
           onWeekStart={(value) => void changeWeekStart(value)}
           onExport={exportStore}
           onSignOut={() => void signOut()}

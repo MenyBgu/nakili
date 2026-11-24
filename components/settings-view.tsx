@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, Download, Home, LogOut, Pencil, Share2, Smartphone, Trash2, UserPlus, Users } from "lucide-react";
+import { Check, Copy, Download, Home, LogOut, Pencil, Share2, ShieldCheck, ShieldOff, Smartphone, Trash2, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
 import type { HouseholdMember, NakiliStore } from "@/lib/types";
 
@@ -38,8 +38,8 @@ function InlineEdit({
   );
 }
 
-function memberLabel(member: HouseholdMember) {
-  if (member.role === "owner") return "יצר/ה את הבית";
+function memberLabel(member: HouseholdMember, creatorUserId: string) {
+  if (member.role === "owner") return member.userId === creatorUserId ? "מנהל/ת · יצר/ה את הבית" : "מנהל/ת";
   return member.userId ? "מחובר/ת ממכשיר" : "בלי מכשיר · אפשר לשייך משימות";
 }
 
@@ -55,6 +55,7 @@ export function SettingsView({
   onWeekStart,
   onAddMember,
   onRemoveMember,
+  onSetManager,
   onExport,
   onSignOut,
 }: {
@@ -69,6 +70,7 @@ export function SettingsView({
   onWeekStart: (weekStart: 0 | 1) => void;
   onAddMember: (nickname: string) => void;
   onRemoveMember: (member: HouseholdMember) => void;
+  onSetManager: (member: HouseholdMember, manager: boolean) => void;
   onExport: (format: "json" | "csv") => void;
   onSignOut: () => void;
 }) {
@@ -123,10 +125,21 @@ export function SettingsView({
               <span className="avatar" aria-hidden="true">{member.nickname.slice(0, 1)}</span>
               <span className="member-name">
                 <strong>{member.nickname}{member.id === me?.id && <em> (אני)</em>}</strong>
-                <small>{memberLabel(member)}</small>
+                <small>{memberLabel(member, store.household.ownerId)}</small>
               </span>
               {member.id === me?.id && (
                 <InlineEdit label="שינוי הכינוי שלי" value={member.nickname} onSave={onRenameMe} />
+              )}
+              {isOwner && remote && !isDemo && member.id !== me?.id && member.userId &&
+                member.userId !== store.household.ownerId && (
+                <button
+                  className="icon-button ghost"
+                  onClick={() => onSetManager(member, member.role !== "owner")}
+                  aria-label={member.role === "owner" ? `ביטול ניהול של ${member.nickname}` : `מינוי ${member.nickname} למנהל/ת`}
+                  title={member.role === "owner" ? "ביטול ניהול" : "מינוי למנהל/ת"}
+                >
+                  {member.role === "owner" ? <ShieldOff size={16} /> : <ShieldCheck size={16} />}
+                </button>
               )}
               {isOwner && member.id !== me?.id && member.role !== "owner" && (
                 <button

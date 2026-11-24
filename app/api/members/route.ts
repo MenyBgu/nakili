@@ -8,6 +8,12 @@ const addSchema = z.object({
   nickname: z.string().trim().min(1).max(40),
 });
 
+const roleSchema = z.object({
+  householdId: z.string().uuid(),
+  memberId: z.string().uuid(),
+  role: z.enum(["owner", "member"]),
+});
+
 const removeSchema = z.object({
   householdId: z.string().uuid(),
   memberId: z.string().uuid(),
@@ -64,6 +70,51 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "ההסרה נכשלה" }, { status: 500 });
     }
     return NextResponse.json({ ok: true });
+  } catch (caught) {
+    return errorResponse(caught);
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const body = roleSchema.parse(await request.json());
+    const { admin, membership } = await callerMembership(body.householdId);
+    if (membership?.role !== "owner") {
+      return NextResponse.json({ error: "רק מנהל/ת הבית יכולים לשנות תפקידים" }, { status: 403 });
+    }
+    if (membership.id === body.memberId) {
+      return NextResponse.json({ error: "אי אפשר לשנות את התפקיד של עצמך" }, { status: 400 });
+    }
+
+    const [target, household] = await Promise.all([
+      admin
+        .from("household_members")
+        .select("id,user_id,role")
+        .eq("id", body.memberId)
+        .eq("household_id", body.householdId)
+        .maybeSingle(),
+      admin.from("households").select("owner_id").eq("id", body.householdId).single(),
+    ]);
+    if (target.error || !target.data || household.error) {
+      return NextResponse.json({ error: "בן/בת הבית לא נמצא" }, { status: 404 });
+    }
+    if (target.data.user_id && target.data.user_id === household.data.owner_id) {
+      return NextResponse.json({ error: "מי שיצר/ה את הבית תמיד נשאר/ת מנהל/ת" }, { status: 400 });
+    }
+    if (body.role === "owner" && !target.data.user_id) {
+      return NextResponse.json({ error: "אפשר למנות כמנהל/ת רק מי שמחובר/ת ממכשיר" }, { status: 400 });
+    }
+
+    const updated = await admin
+      .from("household_members")
+      .update({ role: body.role })
+      .eq("id", body.memberId)
+      .eq("household_id", body.householdId)
+      .select("id,role");
+    if (updated.error || !updated.data?.length) {
+      return NextResponse.json({ error: "העדכון נכשל. נסו שוב." }, { status: 500 });
+    }
+    return NextResponse.json({ member: updated.data[0] });
   } catch (caught) {
     return errorResponse(caught);
   }
