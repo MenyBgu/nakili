@@ -110,3 +110,34 @@ test("creating a household shows the code, then tasks can be managed", async ({ 
   await page.getByRole("button", { name: "הסרת נועה" }).click();
   await expect(page.locator(".member-name", { hasText: "נועה" })).toBeHidden();
 });
+
+test("the summary screen reflects completed tasks", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "יצירת בית חדש" }).click();
+  await page.getByLabel("שם הבית").fill("הבית של רון");
+  await page.getByLabel("איך לקרוא לך?").fill("רון");
+  await page.getByText("להתחיל עם כמה משימות לדוגמה").click();
+  await page.getByRole("button", { name: "יצירת הבית" }).click();
+  await page.getByRole("button", { name: "שמרתי, אפשר להמשיך" }).click();
+
+  await page.getByRole("button", { name: "סיכום" }).click();
+  await expect(page.getByRole("heading", { name: "סיכום" })).toBeVisible();
+  await expect(page.getByText("עוד לא סומנו משימות")).toBeVisible();
+  await page.getByRole("button", { name: "לשבוע" }).click();
+
+  await openAddSheet(page);
+  await page.getByLabel("מה צריך לעשות?").fill("שטיפת כלים");
+  await page.getByRole("button", { name: "שמירה" }).click();
+  await page.getByRole("button", { name: "סימון כבוצע: שטיפת כלים" }).click();
+
+  await page.getByRole("button", { name: "סיכום" }).click();
+  await expect(page.getByTestId("stats-completed")).toHaveText("משימה אחת בוצעה");
+  await expect(page.locator(".people-list")).toContainText("רון");
+  await expect(page.locator(".top-chores")).toContainText("שטיפת כלים");
+  await expect(page.getByText("יום מלא אחד")).toBeVisible();
+
+  await page.getByRole("button", { name: "הכול" }).click();
+  await expect(page.getByTestId("stats-completed")).toHaveText("משימה אחת בוצעה");
+  await page.getByRole("button", { name: "לשבוע" }).click();
+  await expect(page.getByRole("heading", { name: "שלום, רון" })).toBeVisible();
+});

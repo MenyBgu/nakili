@@ -96,7 +96,7 @@ export async function findMemberForUser(
     .select("id,household_id,nickname,role")
     .eq("user_id", userId);
   if (householdId) directQuery = directQuery.eq("household_id", householdId);
-  const direct = await directQuery.maybeSingle();
+  const direct = await directQuery.limit(1).maybeSingle();
   if (direct.error) return { member: null, error: direct.error };
   if (direct.data) return { member: direct.data, error: null };
 

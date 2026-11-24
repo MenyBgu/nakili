@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { errorResponse, getUserOrCreateAnonymousSession, hashAccessCode } from "@/app/api/access/_helpers";
+import {
+  errorResponse,
+  findMemberForUser,
+  getUserOrCreateAnonymousSession,
+  hashAccessCode,
+} from "@/app/api/access/_helpers";
 
 const bodySchema = z.object({
   code: z.string().trim().min(8).max(32),
@@ -38,12 +43,8 @@ export async function POST(request: Request) {
     }
 
     const householdId = householdResult.data.id;
-    const existing = await admin
-      .from("household_members")
-      .select("id")
-      .eq("household_id", householdId)
-      .eq("user_id", user.id)
-      .maybeSingle();
+    const found = await findMemberForUser(admin, user.id, householdId);
+    const existing = { data: found.member ? { id: found.member.id } : null };
     const profiles = existing.data
       ? null
       : await admin

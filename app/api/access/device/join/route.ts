@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
   errorResponse,
+  findMemberForUser,
   getUserOrCreateAnonymousSession,
   hashAccessCode,
 } from "@/app/api/access/_helpers";
@@ -16,6 +17,14 @@ export async function POST(request: Request) {
     const { admin, user, session, error } = await getUserOrCreateAnonymousSession();
     if (error || !user) {
       return NextResponse.json({ error: "לא ניתן להתחבר כרגע. נסו שוב בעוד רגע." }, { status: 503 });
+    }
+
+    const already = await findMemberForUser(admin, user.id);
+    if (already.error) {
+      return NextResponse.json({ error: "חיבור המכשיר נכשל. נסו שוב." }, { status: 500 });
+    }
+    if (already.member) {
+      return NextResponse.json({ error: "המכשיר הזה כבר מחובר לבית. כדי לעבור, צאו קודם מהבית." }, { status: 409 });
     }
 
     const token = await admin

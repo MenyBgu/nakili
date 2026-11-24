@@ -1,12 +1,13 @@
 "use client";
 
-import { ArrowRight, Settings, X } from "lucide-react";
+import { ArrowRight, BarChart3, Settings, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { AccessForm, CodeReveal, Landing, type AccessValues } from "@/components/access-screens";
 import { ChoreSheet } from "@/components/chore-sheet";
 import { NakiliLogo } from "@/components/nakili-logo";
 import { SettingsView } from "@/components/settings-view";
+import { StatsView } from "@/components/stats-view";
 import { WeekView } from "@/components/week-view";
 import { demoStore } from "@/lib/demo-data";
 import { choresForDate, completionFor, localDate, parseLocalDate, shiftWeek, weekDays } from "@/lib/date";
@@ -27,7 +28,7 @@ import {
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Chore, CompletionStatus, HouseholdMember, NakiliStore } from "@/lib/types";
 
-type Screen = "week" | "settings";
+type Screen = "week" | "settings" | "stats";
 type AccessMode = "landing" | "create" | "join" | "pair";
 type SheetState = { chore: Chore | null; date: string } | null;
 
@@ -417,8 +418,8 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
     });
     if (!remote) return;
     await run(async () => {
-      const result = await remote.from("household_members").update({ nickname }).eq("id", memberId);
-      if (result.error) throw new Error("שינוי הכינוי נכשל");
+      const result = await remote.from("household_members").update({ nickname }).eq("id", memberId).select("id");
+      if (result.error || !result.data?.length) throw new Error("שינוי הכינוי נכשל");
     }, "שינוי הכינוי נכשל");
   };
 
@@ -541,9 +542,14 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
           </span>
         </div>
         {screen === "week" ? (
-          <button className="icon-button" onClick={() => setScreen("settings")} aria-label="הגדרות">
-            <Settings size={20} />
-          </button>
+          <div className="topbar-actions">
+            <button className="icon-button" onClick={() => setScreen("stats")} aria-label="סיכום">
+              <BarChart3 size={20} />
+            </button>
+            <button className="icon-button" onClick={() => setScreen("settings")} aria-label="הגדרות">
+              <Settings size={20} />
+            </button>
+          </div>
         ) : (
           <button className="secondary-button" onClick={() => setScreen("week")}>
             <ArrowRight size={17} /> לשבוע
@@ -590,6 +596,8 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
           onToggle={toggleDone}
           onSkip={toggleSkip}
         />
+      ) : screen === "stats" ? (
+        <StatsView store={store} />
       ) : (
         <SettingsView
           store={store}
