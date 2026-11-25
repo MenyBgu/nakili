@@ -1,7 +1,7 @@
 "use client";
 
-import { Check, ChevronLeft, ChevronRight, Plus, Trash2, Undo2 } from "lucide-react";
-import type { CSSProperties } from "react";
+import { Check, ChevronLeft, ChevronRight, Plus, StickyNote, Trash2, Undo2 } from "lucide-react";
+import { useState, type CSSProperties } from "react";
 import { choresForDate, completionFor, formatWeekTitle, parseLocalDate, weekDays } from "@/lib/date";
 import { categoryMeta } from "@/lib/store";
 import type { Chore, NakiliStore } from "@/lib/types";
@@ -31,6 +31,9 @@ export function WeekView({
   onToggle: (chore: Chore, date: string) => void;
   onSkip: (chore: Chore, date: string) => void;
 }) {
+  const [openNotes, setOpenNotes] = useState<string[]>([]);
+  const toggleNote = (id: string) =>
+    setOpenNotes((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
   const days = weekDays(weekDate, store.household);
   const isCurrentWeek = days.some((day) => day.isToday);
   const selected = days.find((day) => day.date === selectedDate) ?? days[0];
@@ -110,7 +113,9 @@ export function WeekView({
             {dayChores.map((chore) => {
               const status = statusOf(chore, selected.date);
               const assignee = store.members.find((member) => member.id === chore.assignedMemberId);
-              const meta = [categoryMeta(chore.category).label, assignee?.nickname, chore.description]
+              const note = chore.description.trim();
+              const noteOpen = openNotes.includes(chore.id);
+              const meta = [categoryMeta(chore.category).label, assignee?.nickname]
                 .filter(Boolean)
                 .join(" · ");
               return (
@@ -150,6 +155,16 @@ export function WeekView({
                   >
                     <Trash2 size={16} />
                   </button>
+                  {note && (
+                    <button
+                      className={`task-note ${noteOpen ? "open" : ""}`}
+                      onClick={() => toggleNote(chore.id)}
+                      aria-expanded={noteOpen}
+                    >
+                      <StickyNote size={15} aria-hidden="true" />
+                      <span>{note}</span>
+                    </button>
+                  )}
                 </li>
               );
             })}

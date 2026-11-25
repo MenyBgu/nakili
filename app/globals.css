@@ -1587,3 +1587,95 @@ fieldset > input[type="date"] {
   display: flex;
   gap: 8px;
 }
+
+/* Notes */
+
+.task {
+  flex-wrap: wrap;
+}
+
+.task-note {
+  display: flex;
+  align-items: flex-start;
+  flex: 0 0 auto;
+  gap: 8px;
+  width: calc(100% - 52px);
+  margin: 2px 52px 6px 0;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 12px;
+  color: #6a4a12;
+  background: #fff6e0;
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: right;
+}
+
+[dir="rtl"] .task-note {
+  margin: 2px 52px 6px 0;
+}
+
+.task-note svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: #c98a1f;
+}
+
+.task-note span {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.task-note.open span {
+  display: block;
+  -webkit-line-clamp: unset;
+}
+
+.task.completed .task-note,
+.task.skipped .task-note {
+  opacity: 0.65;
+}
+
+.note-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: #c98a1f;
+  background: #fffaf0;
+}
+
+.note-field:focus-within {
+  border-color: #e9c46a;
+}
+
+.note-field svg {
+  margin-top: 3px;
+  flex: 0 0 auto;
+}
+
+.note-field textarea {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  resize: none;
+  color: var(--text);
+  background: transparent;
+  font: inherit;
+}
+
+.note-field textarea,
+.note-field textarea:focus {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 15px;
+  font-weight: 500;
+}

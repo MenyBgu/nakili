@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2, X } from "lucide-react";
+import { StickyNote, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
@@ -117,6 +117,18 @@ export function ChoreSheet({
             maxLength={100}
           />
         </div>
+
+        <label className="note-field">
+          <StickyNote size={17} aria-hidden="true" />
+          <textarea
+            aria-label="הערה"
+            value={draft.description}
+            onChange={(event) => update("description", event.target.value)}
+            placeholder="הערה למשימה (לא חובה)"
+            rows={draft.description.length > 40 ? 2 : 1}
+            maxLength={240}
+          />
+        </label>
 
         <div className="when">
           <div className="frequency-options" role="group" aria-label="תדירות">
@@ -260,16 +272,6 @@ export function ChoreSheet({
               ))}
             </div>
           </fieldset>
-          <label>
-            הערה
-            <textarea
-              value={draft.description}
-              onChange={(event) => update("description", event.target.value)}
-              placeholder="מה חשוב לזכור?"
-              rows={2}
-              maxLength={240}
-            />
-          </label>
         </details>
 
         {error && <div className="notice error" role="alert">{error}</div>}

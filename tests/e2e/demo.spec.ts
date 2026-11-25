@@ -141,3 +141,42 @@ test("the summary screen reflects completed tasks", async ({ page }) => {
   await page.getByRole("button", { name: "לשבוע" }).click();
   await expect(page.getByRole("heading", { name: "שלום, רון" })).toBeVisible();
 });
+
+test("a task note is visible in the list without opening the task", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "יצירת בית חדש" }).click();
+  await page.getByLabel("שם הבית").fill("הבית של גל");
+  await page.getByLabel("איך לקרוא לך?").fill("גל");
+  await page.getByText("להתחיל עם כמה משימות לדוגמה").click();
+  await page.getByRole("button", { name: "יצירת הבית" }).click();
+  await page.getByRole("button", { name: "שמרתי, אפשר להמשיך" }).click();
+
+  await openAddSheet(page);
+  // The note field sits in the main form, not hidden under "more options".
+  await expect(page.getByLabel("הערה")).toBeVisible();
+  await page.getByLabel("מה צריך לעשות?").fill("הוצאת פחים");
+  const longNote = "לא לשכוח את פח הקרטון, הוא יוצא רק ביום שלישי, ולסגור היטב את השקיות כדי שהחתולים לא יפתחו אותן";
+  await page.getByLabel("הערה").fill(longNote);
+  await page.getByRole("button", { name: "שמירה" }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+
+  const task = page.locator(".task", { hasText: "הוצאת פחים" });
+  const note = task.locator(".task-note");
+  await expect(note).toBeVisible();
+  await expect(note).toContainText("לא לשכוח את פח הקרטון");
+  await expect(note).toHaveAttribute("aria-expanded", "false");
+
+  await note.click();
+  await expect(note).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await note.click();
+  await expect(note).toHaveAttribute("aria-expanded", "false");
+
+  // Tasks without a note show no note strip, and the note survives a refresh.
+  await openAddSheet(page);
+  await page.getByLabel("מה צריך לעשות?").fill("השקיית עציצים");
+  await page.getByRole("button", { name: "שמירה" }).click();
+  await expect(page.locator(".task", { hasText: "השקיית עציצים" }).locator(".task-note")).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator(".task", { hasText: "הוצאת פחים" }).locator(".task-note")).toContainText("פח הקרטון");
+});
