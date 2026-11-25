@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowRight, BarChart3, Settings, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { AccessForm, CodeReveal, Landing, type AccessValues } from "@/components/access-screens";
 import { ChoreSheet } from "@/components/chore-sheet";
@@ -28,6 +28,17 @@ import {
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Chore, CompletionStatus, HouseholdMember, NakiliStore } from "@/lib/types";
 
+const SYNC_INTERVAL_MS = 12000;
+
+function sameStore(a: NakiliStore, b: NakiliStore) {
+  const stable = (value: NakiliStore) =>
+    JSON.stringify({
+      ...value,
+      completions: [...value.completions].sort((x, y) => x.id.localeCompare(y.id)),
+    });
+  return stable(a) === stable(b);
+}
+
 type Screen = "week" | "settings" | "stats";
 type AccessMode = "landing" | "create" | "join" | "pair";
 type SheetState = { chore: Chore | null; date: string } | null;
@@ -46,6 +57,11 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
+  const [notice, setNotice] = useState("");
+  // Background sync must never overwrite a change that is still being saved.
+  const pendingWrites = useRef(0);
+  const lastWriteAt = useRef(0);
+  const missedSyncs = useRef(0);
   const supabase = useMemo(
     () => (supabaseConfigured ? createSupabaseBrowserClient() : null),
     [supabaseConfigured],
@@ -99,12 +115,60 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
     };
   }, [reload, supabaseConfigured]);
 
+  const hasStore = Boolean(store);
+  useEffect(() => {
+    if (!supabase || isDemo || !hasStore) return;
+    let stopped = false;
+    const sync = async () => {
+      if (stopped || document.visibilityState !== "visible") return;
+      if (pendingWrites.current > 0 || Date.now() - lastWriteAt.current < 2500) return;
+      try {
+        const next = await fetchRemoteStore(supabase);
+        if (stopped || pendingWrites.current > 0) return;
+        if (!next) {
+          // Only treat this as "removed from the house" after two confirmations while online.
+          missedSyncs.current += 1;
+          if (missedSyncs.current >= 2 && navigator.onLine) {
+            missedSyncs.current = 0;
+            await supabase.auth.signOut().catch(() => undefined);
+            setStore(null);
+            setScreen("week");
+            setAccessMode("landing");
+            setNotice("אינכם מחוברים יותר לבית הזה. אפשר להצטרף שוב עם קוד בית או קוד חיבור.");
+          }
+          return;
+        }
+        missedSyncs.current = 0;
+        next.household.accessCode = recallCode(next.household.id);
+        setStore((current) => (current && sameStore(current, next) ? current : next));
+      } catch {
+        // Offline or a temporary error: keep what is on screen and try again later.
+      }
+    };
+    const timer = window.setInterval(() => void sync(), SYNC_INTERVAL_MS);
+    const onVisible = () => void sync();
+    window.addEventListener("focus", onVisible);
+    window.addEventListener("online", onVisible);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", onVisible);
+      window.removeEventListener("online", onVisible);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [supabase, isDemo, hasStore]);
+
   const run = async (action: () => Promise<void>, fallbackMessage: string) => {
+    pendingWrites.current += 1;
     try {
       await action();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : fallbackMessage);
       if (remote) await reload().catch(() => undefined);
+    } finally {
+      pendingWrites.current -= 1;
+      lastWriteAt.current = Date.now();
     }
   };
 
@@ -515,9 +579,11 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
     if (accessMode === "landing") {
       return (
         <Landing
+          notice={notice}
           showDevicePairing={Boolean(supabase)}
           onSelect={(mode) => {
             setError("");
+            setNotice("");
             setAccessMode(mode);
           }}
           onDemo={() => {

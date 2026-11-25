@@ -1679,3 +1679,34 @@ fieldset > input[type="date"] {
   font-size: 15px;
   font-weight: 500;
 }
+
+/* Field errors */
+
+.field-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: -4px 2px 0;
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  animation: error-in 160ms ease;
+}
+
+.field-error svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.title-field.invalid {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgb(185 75 69 / 12%);
+}
+
+@keyframes error-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}

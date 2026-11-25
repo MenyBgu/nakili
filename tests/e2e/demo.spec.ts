@@ -180,3 +180,36 @@ test("a task note is visible in the list without opening the task", async ({ pag
   await page.reload();
   await expect(page.locator(".task", { hasText: "הוצאת פחים" }).locator(".task-note")).toContainText("פח הקרטון");
 });
+
+test("saving with something missing explains what to fix, next to the field", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "יצירת בית חדש" }).click();
+  await page.getByLabel("שם הבית").fill("הבית של מור");
+  await page.getByLabel("איך לקרוא לך?").fill("מור");
+  await page.getByText("להתחיל עם כמה משימות לדוגמה").click();
+  await page.getByRole("button", { name: "יצירת הבית" }).click();
+  await page.getByRole("button", { name: "שמרתי, אפשר להמשיך" }).click();
+
+  await openAddSheet(page);
+  await page.getByRole("button", { name: "שמירה" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator(".field-error")).toContainText("כתבו מה צריך לעשות");
+  await expect(page.getByLabel("מה צריך לעשות?")).toBeFocused();
+
+  // The message disappears as soon as the field is fixed.
+  await page.getByLabel("מה צריך לעשות?").fill("סידור ארון");
+  await expect(dialog.locator(".field-error")).toHaveCount(0);
+
+  // Weekly without any day.
+  const todayName = await dialog.locator(".weekday-picker button[aria-pressed=true]").first().getAttribute("aria-label");
+  await dialog.getByRole("button", { name: todayName as string }).click();
+  await page.getByRole("button", { name: "שמירה" }).click();
+  await expect(dialog.locator(".field-error")).toContainText("בחרו לפחות יום אחד");
+  await dialog.getByRole("button", { name: todayName as string }).click();
+  await expect(dialog.locator(".field-error")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "שמירה" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator(".task", { hasText: "סידור ארון" })).toBeVisible();
+});

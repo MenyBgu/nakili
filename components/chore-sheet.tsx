@@ -1,7 +1,7 @@
 "use client";
 
-import { StickyNote, Trash2, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { CircleAlert, StickyNote, Trash2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
 import { WEEKDAYS, parseLocalDate } from "@/lib/date";
@@ -35,9 +35,21 @@ export function ChoreSheet({
 }) {
   const [draft, setDraft] = useState<ChoreDraft>(() => (chore ? choreToDraft(chore) : blankDraft(date)));
   const [styleTouched, setStyleTouched] = useState(Boolean(chore));
-  const [error, setError] = useState("");
-  const update = <K extends keyof ChoreDraft>(key: K, value: ChoreDraft[K]) =>
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [moreOpen, setMoreOpen] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const clearError = (...keys: Array<keyof FieldErrors>) =>
+    setErrors((current) => {
+      if (!keys.some((key) => current[key])) return current;
+      const next = { ...current };
+      for (const key of keys) delete next[key];
+      return next;
+    });
+  const update = <K extends keyof ChoreDraft>(key: K, value: ChoreDraft[K]) => {
     setDraft((current) => ({ ...current, [key]: value }));
+    const field = ERROR_FIELD[key];
+    if (field) clearError(field);
+  };
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -47,8 +59,10 @@ export function ChoreSheet({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const changeTitle = (title: string) =>
+  const changeTitle = (title: string) => {
     setDraft((current) => ({ ...current, title, ...(styleTouched ? {} : guessFromTitle(title)) }));
+    clearError("title");
+  };
 
   const pickCategory = (value: ChoreDraft["category"]) => {
     const meta = categoryMeta(value);
@@ -65,18 +79,27 @@ export function ChoreSheet({
     );
 
   const submit = () => {
-    if (!draft.title.trim()) return setError("מה צריך לעשות?");
-    if ((draft.frequency === "weekly" || draft.frequency === "biweekly") && draft.weekdays.length === 0) {
-      return setError("בחרו לפחות יום אחד");
-    }
-    if (draft.frequency === "one_off" && !draft.oneOffDate) return setError("בחרו תאריך");
+    const found: FieldErrors = {};
+    const weekly = draft.frequency === "weekly" || draft.frequency === "biweekly";
+    if (!draft.title.trim()) found.title = "כתבו מה צריך לעשות, כדי שנדע מה לשמור.";
+    if (weekly && draft.weekdays.length === 0) found.weekdays = "בחרו לפחות יום אחד, כדי שנדע מתי להציג את המשימה.";
+    if (draft.frequency === "one_off" && !draft.oneOffDate) found.date = "בחרו תאריך, כדי שנדע מתי המשימה.";
     if ((draft.frequency === "biweekly" || draft.frequency === "monthly") && !draft.startDate) {
-      return setError("בחרו תאריך התחלה");
+      found.start = "בחרו תאריך ראשון, ומשם נחשב מתי המשימה חוזרת.";
     }
     if (draft.startDate && draft.endDate && draft.endDate < draft.startDate) {
-      return setError("תאריך הסיום מוקדם מתאריך ההתחלה");
+      found.end = "תאריך הסיום מוקדם מתאריך ההתחלה. תקנו אחד מהם.";
     }
-    setError("");
+    setErrors(found);
+    if (Object.keys(found).length) {
+      if (found.end || (found.start && draft.frequency === "biweekly")) setMoreOpen(true);
+      window.requestAnimationFrame(() => {
+        const first = formRef.current?.querySelector<HTMLElement>(".field-error");
+        first?.scrollIntoView({ block: "center", behavior: "smooth" });
+        if (found.title) formRef.current?.querySelector<HTMLInputElement>(".title-input")?.focus({ preventScroll: true });
+      });
+      return;
+    }
     onSave(draft);
   };
 
@@ -89,6 +112,8 @@ export function ChoreSheet({
       }}
     >
       <form
+        ref={formRef}
+        noValidate
         className="sheet"
         role="dialog"
         aria-modal="true"
@@ -105,18 +130,21 @@ export function ChoreSheet({
           </button>
         </header>
 
-        <div className="title-field">
+        <div className={`title-field ${errors.title ? "invalid" : ""}`}>
           <span className="title-icon" aria-hidden="true" style={{ background: draft.color }}>{draft.icon}</span>
           <input
             autoFocus={!chore}
             aria-label="מה צריך לעשות?"
             className="title-input"
+            aria-invalid={Boolean(errors.title)}
+            aria-describedby={errors.title ? "err-title" : undefined}
             value={draft.title}
             onChange={(event) => changeTitle(event.target.value)}
             placeholder="מה צריך לעשות?"
             maxLength={100}
           />
         </div>
+        {errors.title && <FieldError id="err-title">{errors.title}</FieldError>}
 
         <label className="note-field">
           <StickyNote size={17} aria-hidden="true" />
@@ -142,14 +170,15 @@ export function ChoreSheet({
                 type="button"
                 key={value}
                 className={draft.frequency === value ? "selected" : ""}
-                onClick={() =>
+                onClick={() => {
+                  setErrors({});
                   setDraft((current) => ({
                     ...current,
                     frequency: value,
                     startDate: current.startDate || date,
                     weekdays: current.weekdays.length ? current.weekdays : [parseLocalDate(date).getDay()],
-                  }))
-                }
+                  }));
+                }}
                 aria-pressed={draft.frequency === value}
               >
                 {label}
@@ -186,6 +215,9 @@ export function ChoreSheet({
               onChange={(event) => update("oneOffDate", event.target.value)}
             />
           )}
+          {errors.weekdays && <FieldError id="err-weekdays">{errors.weekdays}</FieldError>}
+          {errors.date && <FieldError id="err-date">{errors.date}</FieldError>}
+          {errors.start && <FieldError id="err-start">{errors.start}</FieldError>}
           {draft.startDate && (draft.frequency === "monthly" || draft.frequency === "biweekly") && (
             <p className="when-hint">
               {draft.frequency === "monthly"
@@ -195,7 +227,7 @@ export function ChoreSheet({
           )}
         </div>
 
-        <details className="more">
+        <details className="more" open={moreOpen} onToggle={(event) => setMoreOpen(event.currentTarget.open)}>
           <summary>עוד אפשרויות</summary>
           {draft.frequency !== "one_off" && (
             <div className="two-cols">
@@ -211,6 +243,7 @@ export function ChoreSheet({
               </label>
             </div>
           )}
+          {errors.end && <FieldError id="err-end">{errors.end}</FieldError>}
           {members.length > 1 && (
             <fieldset>
               <legend>מי אחראי?</legend>
@@ -274,8 +307,6 @@ export function ChoreSheet({
           </fieldset>
         </details>
 
-        {error && <div className="notice error" role="alert">{error}</div>}
-
         <footer className="sheet-actions">
           <button type="submit" className="primary-button large" disabled={saving}>
             {saving ? "שומרים..." : "שמירה"}
@@ -288,5 +319,24 @@ export function ChoreSheet({
         </footer>
       </form>
     </div>
+  );
+}
+
+type FieldErrors = Partial<Record<"title" | "weekdays" | "date" | "start" | "end", string>>;
+
+const ERROR_FIELD: Partial<Record<keyof ChoreDraft, keyof FieldErrors>> = {
+  title: "title",
+  weekdays: "weekdays",
+  oneOffDate: "date",
+  startDate: "start",
+  endDate: "end",
+};
+
+function FieldError({ id, children }: { id: string; children: React.ReactNode }) {
+  return (
+    <p className="field-error" id={id} role="alert">
+      <CircleAlert size={15} aria-hidden="true" />
+      <span>{children}</span>
+    </p>
   );
 }

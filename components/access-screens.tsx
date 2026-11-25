@@ -16,14 +16,17 @@ export function Landing({
   onSelect,
   onDemo,
   showDevicePairing,
+  notice,
 }: {
   onSelect: (mode: "create" | "join" | "pair") => void;
   onDemo: () => void;
   showDevicePairing: boolean;
+  notice?: string;
 }) {
   return (
     <main className="shell landing">
       <section className="hero" aria-labelledby="landing-title">
+        {notice && <div className="notice" role="status">{notice}</div>}
         <div className="hero-brand">
           <NakiliLogo size={64} title="" />
           <strong>נקי-לי</strong>
