@@ -9,8 +9,10 @@ async function openAddSheet(page: Page) {
 
 test("the demo opens the weekly planner", async ({ page }) => {
   await page.goto("/");
+  await expect(page.getByRole("contentinfo")).toContainText("כל הזכויות שמורות למני בוגנים");
   await page.getByRole("button", { name: "רק להציץ בדוגמה" }).click();
   await expect(page.getByRole("heading", { name: /שלום/ })).toBeVisible();
+  await expect(page.getByRole("contentinfo")).toContainText("כל הזכויות שמורות למני בוגנים");
   await expect(page.getByText("זה בית לדוגמה")).toBeVisible();
   await expect(page.locator(".day-chip")).toHaveCount(7);
 

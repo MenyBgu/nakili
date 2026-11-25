@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { SiteFooter } from "@/components/site-footer";
 import "./globals.css";
 
 const description = "ניקיון, סידורים וארגון לכל בני הבית, בשבוע אחד ברור.";
@@ -38,7 +39,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="he" dir="rtl">
-      <body>{children}</body>
+      <body>
+        {children}
+        <SiteFooter />
+      </body>
     </html>
   );
 }

@@ -1710,3 +1710,45 @@ fieldset > input[type="date"] {
     transform: translateY(-3px);
   }
 }
+
+/* Footer */
+
+.site-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: min(100% - 32px, 720px);
+  margin: -64px auto 0;
+  padding: 16px 0 calc(22px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+.site-footer svg {
+  flex: 0 0 auto;
+  border-radius: 5px;
+  opacity: 0.85;
+}
+
+.site-footer p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.site-footer-dot {
+  opacity: 0.6;
+}
+
+/* Keep the footer clear of the floating add button on phones. */
+@media (max-width: 640px) {
+  body:has(.fab) .site-footer {
+    padding-left: 84px;
+  }
+}
