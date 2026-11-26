@@ -90,7 +90,7 @@ export function blankDraft(date = localDate()): ChoreDraft {
     category: category.value,
     icon: category.icon,
     color: category.color,
-    frequency: "weekly",
+    frequency: "one_off",
     weekdays: [new Date(`${date}T12:00:00`).getDay()],
     oneOffDate: date,
     startDate: date,

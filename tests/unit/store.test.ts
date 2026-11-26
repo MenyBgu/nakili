@@ -24,6 +24,7 @@ describe("guessFromTitle", () => {
 describe("blankDraft", () => {
   it("starts on the day the task is added", () => {
     const draft = blankDraft("2026-11-26");
+    expect(draft.frequency).toBe("one_off");
     expect(draft.startDate).toBe("2026-11-26");
     expect(draft.oneOffDate).toBe("2026-11-26");
     expect(draft.weekdays).toEqual([4]);

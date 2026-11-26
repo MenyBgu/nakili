@@ -39,6 +39,9 @@ test("creating a household shows the code, then tasks can be managed", async ({ 
   await expect(page.getByText("אין משימות ביום הזה")).toBeVisible();
 
   await openAddSheet(page);
+  await expect(page.getByRole("button", { name: "פעם אחת" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("תאריך")).toHaveValue(/^\d{4}-\d{2}-\d{2}$/);
+  await page.getByRole("button", { name: "כל שבוע" }).click();
   await page.getByText("עוד אפשרויות").click();
   await expect(page.getByLabel("תאריך התחלה")).toHaveValue(/^\d{4}-\d{2}-\d{2}$/);
   await page.getByLabel("מה צריך לעשות?").fill("קניות לשבת");
@@ -204,6 +207,7 @@ test("saving with something missing explains what to fix, next to the field", as
   await expect(dialog.locator(".field-error")).toHaveCount(0);
 
   // Weekly without any day.
+  await dialog.getByRole("button", { name: "כל שבוע" }).click();
   const todayName = await dialog.locator(".weekday-picker button[aria-pressed=true]").first().getAttribute("aria-label");
   await dialog.getByRole("button", { name: todayName as string }).click();
   await page.getByRole("button", { name: "שמירה" }).click();
