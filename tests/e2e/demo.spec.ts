@@ -219,3 +219,41 @@ test("saving with something missing explains what to fix, next to the field", as
   await expect(dialog).toBeHidden();
   await expect(page.locator(".task", { hasText: "סידור ארון" })).toBeVisible();
 });
+
+test("a rotating promo shows our other live apps with working links", async ({ page }) => {
+  await page.clock.install();
+  await page.goto("/");
+
+  const promo = page.getByRole("complementary", { name: "עוד אפליקציות מבית מני בוגנים" });
+  await expect(promo).toBeVisible();
+
+  const household = promo.locator('[data-promo="household-expenses"]');
+  const stocks = promo.locator('[data-promo="meny-stocks"]');
+  await expect(household).toBeVisible();
+  await expect(stocks).toBeHidden();
+  await expect(household).toHaveAttribute("href", "https://household-expenses-indol.vercel.app");
+  await expect(household).toHaveAttribute("target", "_blank");
+  await expect(household).toHaveAttribute("rel", /noopener/);
+  await expect(household.locator("img")).toHaveJSProperty("complete", true);
+
+  await page.clock.fastForward(7500);
+  await expect(stocks).toBeVisible();
+  await expect(household).toBeHidden();
+  await expect(stocks).toHaveAttribute("href", "https://meny-stock-desktop.vercel.app");
+  await expect(stocks).toContainText("לא ייעוץ השקעות");
+  await expect(stocks.locator("img")).toHaveJSProperty("naturalWidth", 300);
+
+  await promo.getByRole("button", { name: "הצג את הוצאות הבית" }).click();
+  await expect(household).toBeVisible();
+  await expect(stocks).toBeHidden();
+
+  // Hovering pauses the rotation.
+  await promo.hover();
+  await page.clock.fastForward(20000);
+  await expect(household).toBeVisible();
+
+  // Footer stays below the promo.
+  const promoBox = await promo.boundingBox();
+  const footerBox = await page.getByRole("contentinfo").boundingBox();
+  expect(footerBox!.y).toBeGreaterThanOrEqual(promoBox!.y + promoBox!.height);
+});
