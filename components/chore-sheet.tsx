@@ -14,7 +14,9 @@ import {
   iconOptions,
   type ChoreDraft,
 } from "@/lib/store";
+import { parseShoppingItems, serializeShoppingItems } from "@/lib/shopping";
 import type { Chore, HouseholdMember } from "@/lib/types";
+import { ShoppingListEditor } from "@/components/shopping-list-editor";
 
 export function ChoreSheet({
   chore,
@@ -37,6 +39,8 @@ export function ChoreSheet({
   const [styleTouched, setStyleTouched] = useState(Boolean(chore));
   const [errors, setErrors] = useState<FieldErrors>({});
   const [moreOpen, setMoreOpen] = useState(false);
+  const [items, setItems] = useState<string[]>(() => seedItems(chore?.description ?? ""));
+  const isShopping = draft.category === "shopping";
   const formRef = useRef<HTMLFormElement>(null);
   const clearError = (...keys: Array<keyof FieldErrors>) =>
     setErrors((current) => {
@@ -59,13 +63,21 @@ export function ChoreSheet({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const changeItems = (next: string[]) => {
+    setItems(next);
+    setDraft((current) => ({ ...current, description: serializeShoppingItems(next) }));
+  };
+
   const changeTitle = (title: string) => {
-    setDraft((current) => ({ ...current, title, ...(styleTouched ? {} : guessFromTitle(title)) }));
+    const guess = styleTouched ? {} : guessFromTitle(title);
+    if ("category" in guess && guess.category === "shopping" && !isShopping) setItems(seedItems(draft.description));
+    setDraft((current) => ({ ...current, title, ...guess }));
     clearError("title");
   };
 
   const pickCategory = (value: ChoreDraft["category"]) => {
     const meta = categoryMeta(value);
+    if (value === "shopping" && !isShopping) setItems(seedItems(draft.description));
     setStyleTouched(true);
     setDraft((current) => ({ ...current, category: value, icon: meta.icon, color: meta.color }));
   };
@@ -146,17 +158,21 @@ export function ChoreSheet({
         </div>
         {errors.title && <FieldError id="err-title">{errors.title}</FieldError>}
 
-        <label className="note-field">
-          <StickyNote size={17} aria-hidden="true" />
-          <textarea
-            aria-label="הערה"
-            value={draft.description}
-            onChange={(event) => update("description", event.target.value)}
-            placeholder="הערה למשימה (לא חובה)"
-            rows={draft.description.length > 40 ? 2 : 1}
-            maxLength={240}
-          />
-        </label>
+        {isShopping ? (
+          <ShoppingListEditor items={items} onChange={changeItems} />
+        ) : (
+          <label className="note-field">
+            <StickyNote size={17} aria-hidden="true" />
+            <textarea
+              aria-label="הערה"
+              value={draft.description}
+              onChange={(event) => update("description", event.target.value)}
+              placeholder="הערה למשימה (לא חובה)"
+              rows={draft.description.length > 40 ? 2 : 1}
+              maxLength={240}
+            />
+          </label>
+        )}
 
         <div className="when">
           <div className="frequency-options" role="group" aria-label="תדירות">
@@ -320,6 +336,11 @@ export function ChoreSheet({
       </form>
     </div>
   );
+}
+
+function seedItems(description: string) {
+  const parsed = parseShoppingItems(description);
+  return parsed.length ? parsed : [""];
 }
 
 type FieldErrors = Partial<Record<"title" | "weekdays" | "date" | "start" | "end", string>>;

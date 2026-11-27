@@ -1954,3 +1954,190 @@ fieldset > input[type="date"] {
     transition: none;
   }
 }
+
+/* Shopping list: numbered products, in the task sheet and in the week list. */
+.shopping-num {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: #8a4b12;
+  background: #fde6d3;
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.shopping-editor {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #f3d6bb;
+  border-radius: 16px;
+  background: #fff8f1;
+}
+
+.shopping-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #8a4b12;
+  font-size: 14px;
+}
+
+.shopping-count {
+  margin-inline-start: auto;
+  padding: 2px 10px;
+  border-radius: 999px;
+  color: #8a4b12;
+  background: #fde6d3;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.shopping-rows {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shopping-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.shopping-row input {
+  flex: 1;
+  min-width: 0;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid #f3d6bb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.shopping-row input:focus {
+  border-color: #e59a55;
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(229 154 85 / 20%);
+}
+
+.shopping-remove {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #9a7a5c;
+  background: transparent;
+}
+
+.shopping-remove:hover {
+  color: var(--danger);
+  background: #fde8e6;
+}
+
+.shopping-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  border: 1.5px dashed #e8b98a;
+  border-radius: 12px;
+  color: #8a4b12;
+  background: transparent;
+  font-weight: 700;
+}
+
+.shopping-add:disabled {
+  opacity: 0.5;
+}
+
+.task-shopping {
+  flex: 0 0 auto;
+  width: calc(100% - 52px);
+  margin: 2px 52px 6px 0;
+  padding: 10px 12px 8px;
+  border-radius: 14px;
+  background: #fff6ec;
+}
+
+.task-shopping-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  color: #8a4b12;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.task-shopping-head svg {
+  color: #d9822b;
+}
+
+.task-shopping-head b {
+  margin-inline-start: auto;
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: #fde6d3;
+  font-size: 12px;
+}
+
+.task-shopping ol {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.task-shopping li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: #4a3320;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.task-shopping .shopping-num {
+  width: 22px;
+  height: 22px;
+  font-size: 11px;
+}
+
+.shopping-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.task-shopping-more {
+  margin-top: 6px;
+  padding: 4px 0;
+  border: 0;
+  color: #b4651c;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.task.completed .task-shopping,
+.task.skipped .task-shopping {
+  opacity: 0.65;
+}
+
+.task.completed .task-shopping li {
+  text-decoration: line-through;
+}

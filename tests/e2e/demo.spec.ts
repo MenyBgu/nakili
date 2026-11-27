@@ -49,7 +49,7 @@ test("creating a household shows the code, then tasks can be managed", async ({ 
   await page.getByRole("button", { name: "שמירה" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
   const quickDeleteTask = page.locator(".task", { hasText: "קניות לשבת" });
-  await expect(quickDeleteTask).toContainText("סידורים");
+  await expect(quickDeleteTask).toContainText("קניות");
   page.once("dialog", (dialog) => dialog.accept());
   await quickDeleteTask.getByRole("button", { name: "מחיקת קניות לשבת" }).click();
   await expect(quickDeleteTask).toBeHidden();
@@ -256,4 +256,39 @@ test("a rotating promo shows our other live apps with working links", async ({ p
   const promoBox = await promo.boundingBox();
   const footerBox = await page.getByRole("contentinfo").boundingBox();
   expect(footerBox!.y).toBeGreaterThanOrEqual(promoBox!.y + promoBox!.height);
+});
+
+test("the shopping category gives a numbered product list", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "רק להציץ בדוגמה" }).click();
+  await page.getByRole("button", { name: /^חמישי/ }).click();
+
+  // The demo shopping task shows its products numbered 1..N right in the list.
+  const demoTask = page.locator(".task", { hasText: "קניות לבית" });
+  await expect(demoTask.locator(".task-shopping-head")).toContainText("5 מוצרים");
+  await expect(demoTask.locator(".task-shopping li")).toHaveCount(5);
+  await expect(demoTask.locator(".task-shopping li .shopping-num")).toHaveText(["1", "2", "3", "4", "5"]);
+  await expect(demoTask.locator(".task-shopping li").nth(1)).toContainText("לחם מלא");
+
+  // Creating one: typing "קניות" switches to a numbered list editor.
+  const fab = page.locator(".fab");
+  if (await fab.isVisible()) await fab.click();
+  else await page.locator(".add-row").click();
+  await page.getByLabel("מה צריך לעשות?").fill("קניות לשבת");
+  await expect(page.getByLabel("הערה", { exact: true })).toHaveCount(0);
+  await page.getByLabel("מוצר 1", { exact: true }).fill("חלב");
+  await page.getByLabel("מוצר 1", { exact: true }).press("Enter");
+  await page.getByLabel("מוצר 2", { exact: true }).fill("לחם");
+  await page.getByLabel("מוצר 2", { exact: true }).press("Enter");
+  await page.getByLabel("מוצר 3", { exact: true }).fill("ביצים");
+  await page.getByRole("button", { name: "הוספת מוצר" }).click();
+  await page.getByLabel("מוצר 4", { exact: true }).fill("גבינה");
+  await page.getByLabel("הסרת מוצר 2").click();
+  await expect(page.locator(".shopping-row .shopping-num")).toHaveText(["1", "2", "3"]);
+  await expect(page.locator(".shopping-count")).toHaveText("3 מוצרים");
+  await page.getByRole("button", { name: "שמירה" }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+
+  const created = page.locator(".task", { hasText: "קניות לשבת" });
+  await expect(created.locator(".task-shopping li")).toHaveText(["1חלב", "2ביצים", "3גבינה"]);
 });

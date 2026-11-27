@@ -1,5 +1,5 @@
 export type ChoreFrequency = "weekly" | "biweekly" | "monthly" | "one_off";
-export type ChoreCategory = "cleaning" | "errand" | "organization" | "maintenance" | "other";
+export type ChoreCategory = "cleaning" | "errand" | "organization" | "maintenance" | "shopping" | "other";
 export type CompletionStatus = "completed" | "skipped";
 export type MemberRole = "owner" | "member";
 

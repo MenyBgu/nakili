@@ -21,7 +21,8 @@ export type ChoreDraft = {
 
 export const categoryOptions: Array<{ value: ChoreCategory; label: string; icon: string; color: string }> = [
   { value: "cleaning", label: "ניקיון", icon: "🧽", color: "#dcefe1" },
-  { value: "errand", label: "סידורים", icon: "🛒", color: "#eee2f8" },
+  { value: "shopping", label: "קניות", icon: "🛒", color: "#fde6d3" },
+  { value: "errand", label: "סידורים", icon: "📮", color: "#eee2f8" },
   { value: "organization", label: "סדר וארגון", icon: "📦", color: "#dff1f3" },
   { value: "maintenance", label: "תחזוקה", icon: "🔧", color: "#fff0cf" },
   { value: "other", label: "אחר", icon: "✨", color: "#f6e4e1" },
@@ -30,7 +31,7 @@ export const categoryOptions: Array<{ value: ChoreCategory; label: string; icon:
 export const iconOptions = ["🧽", "🧺", "🧹", "🧼", "🪟", "🗑️", "🍽️", "🛒", "📦", "👕", "🌿", "🔧", "🐾", "✨"];
 
 export function categoryMeta(category: ChoreCategory) {
-  return categoryOptions.find((option) => option.value === category) ?? categoryOptions[4];
+  return categoryOptions.find((option) => option.value === category) ?? categoryOptions[categoryOptions.length - 1];
 }
 
 export function clone<T>(value: T): T {
@@ -50,7 +51,8 @@ export function createLocalAccessCode() {
 
 const categoryKeywords: Array<[ChoreCategory, string[]]> = [
   ["maintenance", ["תיקון", "לתקן", "נורה", "נורות", "מזגן", "פילטר", "סוללה", "ברז", "צביעה", "לצבוע"]],
-  ["errand", ["קניות", "לקנות", "קניה", "סופר", "מכולת", "דואר", "בנק", "תרופות", "לאסוף", "איסוף", "להחזיר"]],
+  ["shopping", ["קניות", "לקנות", "קניה", "סופר", "מכולת"]],
+  ["errand", ["דואר", "בנק", "תרופות", "לאסוף", "איסוף", "להחזיר"]],
   ["organization", ["סידור", "לסדר", "ארגון", "לארגן", "ארון", "מזווה", "מקרר", "מגירה", "מיון", "למיין", "קיפול", "לקפל"]],
   ["cleaning", ["ניקוי", "ניקיון", "לנקות", "שטיפה", "שטיפת", "לשטוף", "אבק", "כביסה", "כלים", "כיור", "אמבטיה", "שירותים", "רצפה", "חלונות", "מטבח", "פח", "פחים", "לטאטא", "שואב"]],
 ];

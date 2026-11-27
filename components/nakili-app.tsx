@@ -25,6 +25,7 @@ import {
   rememberCode,
   type ChoreDraft,
 } from "@/lib/store";
+import { parseShoppingItems } from "@/lib/shopping";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Chore, CompletionStatus, HouseholdMember, NakiliStore } from "@/lib/types";
 
@@ -42,6 +43,13 @@ function sameStore(a: NakiliStore, b: NakiliStore) {
 type Screen = "week" | "settings" | "stats";
 type AccessMode = "landing" | "create" | "join" | "pair";
 type SheetState = { chore: Chore | null; date: string } | null;
+
+function exportNote(chore: Chore) {
+  if (chore.category !== "shopping") return chore.description;
+  return parseShoppingItems(chore.description)
+    .map((item, index) => `${index + 1}. ${item}`)
+    .join("; ");
+}
 
 export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean }) {
   const [hydrated, setHydrated] = useState(false);
@@ -528,7 +536,7 @@ export function NakiliApp({ supabaseConfigured }: { supabaseConfigured: boolean 
       choresForDate(store.chores, day.date).forEach((chore) => {
         const status = completionFor(store.completions, chore.id, day.date)?.status;
         rows.push(
-          [day.date, chore.title, status ? statusLabel[status] : "פתוח", chore.description]
+          [day.date, chore.title, status ? statusLabel[status] : "פתוח", exportNote(chore)]
             .map((value) => `"${value.replaceAll('"', '""')}"`)
             .join(","),
         );

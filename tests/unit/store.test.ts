@@ -7,7 +7,7 @@ describe("guessFromTitle", () => {
   it.each([
     ["להפעיל מכונת כביסה", "cleaning", "🧺"],
     ["לשטוף כלים", "cleaning", "🍽️"],
-    ["קניות בסופר", "errand", "🛒"],
+    ["קניות בסופר", "shopping", "🛒"],
     ["לסדר את המקרר", "organization", "✨"],
     ["ניקוי המקרר", "cleaning", "✨"],
     ["סידור המטבח", "organization", "✨"],

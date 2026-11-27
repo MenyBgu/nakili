@@ -1,12 +1,15 @@
 "use client";
 
-import { Check, ChevronLeft, ChevronRight, Plus, StickyNote, Trash2, Undo2 } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Plus, ShoppingBasket, StickyNote, Trash2, Undo2 } from "lucide-react";
 import { useState, type CSSProperties } from "react";
 import { choresForDate, completionFor, formatWeekTitle, parseLocalDate, weekDays } from "@/lib/date";
+import { parseShoppingItems } from "@/lib/shopping";
 import { categoryMeta } from "@/lib/store";
 import type { Chore, NakiliStore } from "@/lib/types";
 import { format } from "date-fns";
 import { he } from "date-fns/locale";
+
+const SHOPPING_PREVIEW = 5;
 
 export function WeekView({
   store,
@@ -115,6 +118,9 @@ export function WeekView({
               const assignee = store.members.find((member) => member.id === chore.assignedMemberId);
               const note = chore.description.trim();
               const noteOpen = openNotes.includes(chore.id);
+              const shopItems = chore.category === "shopping" ? parseShoppingItems(chore.description) : [];
+              const shopOpen = noteOpen;
+              const shopVisible = shopOpen ? shopItems : shopItems.slice(0, SHOPPING_PREVIEW);
               const meta = [categoryMeta(chore.category).label, assignee?.nickname]
                 .filter(Boolean)
                 .join(" · ");
@@ -155,7 +161,33 @@ export function WeekView({
                   >
                     <Trash2 size={16} />
                   </button>
-                  {note && (
+                  {shopItems.length > 0 ? (
+                    <div className="task-shopping">
+                      <p className="task-shopping-head">
+                        <ShoppingBasket size={15} aria-hidden="true" />
+                        <span>רשימת קניות</span>
+                        <b>{shopItems.length === 1 ? "מוצר אחד" : `${shopItems.length} מוצרים`}</b>
+                      </p>
+                      <ol>
+                        {shopVisible.map((item, index) => (
+                          <li key={index}>
+                            <span className="shopping-num" aria-hidden="true">{index + 1}</span>
+                            <span className="shopping-text">{item}</span>
+                          </li>
+                        ))}
+                      </ol>
+                      {shopItems.length > SHOPPING_PREVIEW && (
+                        <button
+                          type="button"
+                          className="task-shopping-more"
+                          onClick={() => toggleNote(chore.id)}
+                          aria-expanded={shopOpen}
+                        >
+                          {shopOpen ? "הצג פחות" : `עוד ${shopItems.length - SHOPPING_PREVIEW} מוצרים`}
+                        </button>
+                      )}
+                    </div>
+                  ) : note && (
                     <button
                       className={`task-note ${noteOpen ? "open" : ""}`}
                       onClick={() => toggleNote(chore.id)}
